@@ -39,7 +39,7 @@ Dans le répertoire cible, taper `spip_svn_loader`.
 
 Le script tente de détecter la branche associée.
 
-* Si la branche n'existe plus, ou si la branche n'est plus maintenue, il porposera de basculer vers une branche existante (`svn switch`)
+* Si la branche n'existe plus, ou si la branche n'est plus maintenue, il proposera de basculer vers une branche existante (`svn switch`)
 * Si la branche est maintenue, il proposera de faire une mise à jour (`svn up`)
 
 ### Le répertoire cible n'est pas associé à une branche SVN.
@@ -56,4 +56,4 @@ Le script exploite, par défaut, une liste de branches que je considère comme _
 
 ## Usage avancé
 
-ajouter le paramètre `tout` pour accéder à toutes les branches et tous les tags SPIP disponibles sur le dépôt officiel: ```spip_svn_loader tout```
+Ajouter le paramètre `tout` pour accéder à toutes les branches et tous les tags SPIP disponibles sur le dépôt officiel: ```spip_svn_loader tout```

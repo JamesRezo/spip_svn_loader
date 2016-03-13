@@ -45,7 +45,7 @@ function meilleurChoix()
             _reference=$(echo $_reference | sed 's/^[[:digit:]]*\.\(.*\)/\1/')
             mineur=$(echo $_reference | sed 's/^\([[:digit:]]*\)\..*/\1/')
             _reference=$(echo $_reference | sed 's/^[[:digit:]]*\.\(.*\)/\1/')
-            if [ -n $_reference ];then
+            if [ -z $_reference ];then
                 _reference=0
             fi
             indice=$(expr \( $_reference + \( $mineur \* 100 \) \) + \( $majeur \* 10000 \))
