@@ -181,8 +181,15 @@ then
     echo "Le fichier des références est présent."
     #Vérifier la fraicheur du fichier des références
     _REMOTE=`curl -I -s ${SVN_SPIP_REMOTE_REFERENCES} | grep -e '^Last-Modified: ' | sed 's/^Last-Modified: \(.*\) GMT.*/\1/'`
-    _LOCALE=`stat -f %m ${SVN_SPIP_REFERENCES}`
-    _REMOTE=`LANG=en_US.UTF8 && date -j -f "%a, %d %b %Y %T" "${_REMOTE}" "+%s"`
+    _DARWIN=$(echo $OSTYPE | grep -i darwin)
+    if [ -n "$_DARWIN" ]
+    then
+        _LOCALE=`stat -f %m ${SVN_SPIP_REFERENCES}`
+        _REMOTE=`LANG=en_US.UTF8 && date -j -f "%a, %d %b %Y %T" "${_REMOTE}" "+%s"`
+    else
+        _LOCALE=`stat -c %Y ${SVN_SPIP_REFERENCES}`
+        _REMOTE=`LANG=en_US.UTF8 && date -d "${_REMOTE}" "+%s"`
+    fi
     if [ "$_REMOTE" -gt "$_LOCALE" ]
     then
         echo "Mais il n'est plus à jour."
@@ -212,7 +219,7 @@ then
     exit 1
 else
     _version=`php -r "echo PHP_VERSION_ID;"`
-    if [ $_version -lt 53000 ]
+    if [ $_version -lt 50300 ]
     then
         echo "Ca va être chaud avec une version aussi vielle de PHP ! Je préfère m'arrêter là..."
         exit 1
@@ -279,7 +286,7 @@ then
         _BRANCHE=$SVN_SPIP_TAGS"/"$brancheREPONSE
     fi
 
-    WC=`find . -name .svn -type d -maxdepth 1 -exec echo {} \;`
+    WC=`find . -type d -maxdepth 1 -name .svn -exec echo {} \;`
     if [ -z "$WC" ]; then
         #Warning si non vide
         VIDE=`ls -1a | grep -v -e "^\.$" | grep -v -e "^\.\.$" | wc -l`
