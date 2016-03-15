@@ -292,7 +292,7 @@ then
         done
     fi
 
-    ouinon "Installer SPIP dans $_chemin ?"
+    ouinon "Installer SPIP dans $_chemin ?" "oui"
     if [ "$ouinonREPONSE" = "oui" ]
     then
         checkout="checkout"
@@ -309,7 +309,14 @@ then
                 fi
             fi
         fi
-        svn $checkout ${SVN_SPIP_ROOT}${_BRANCHE} $rep
+        echo "Parfait ! Un peu de patience, maintenant..."
+        svn $checkout -q ${SVN_SPIP_ROOT}${_BRANCHE} $rep
+        if [ $? -ne 0 ]
+        then
+            echo "Il y a eu un problème d'installation."
+            exit 1
+        fi
+        echo "OK."
         exit 0
     fi
 
@@ -349,8 +356,14 @@ then
             _BRANCHE=$SVN_SPIP_TAGS"/"$brancheREPONSE
         fi
 
-        echo "Bascule vers "$_BRANCHE"... (ça peut être long, patientez un peu)"
-        svn switch ^${_BRANCHE}
+        echo "Bascule vers ^"$_BRANCHE"... (ça peut être long, patientez un peu)"
+        svn switch -q ^${_BRANCHE}
+        if [ $? -ne 0 ]
+        then
+            echo "Il y a eu un problème de bascule."
+            exit 1
+        fi
+        echo "OK."
         exit 0
     fi
 fi
@@ -367,7 +380,14 @@ then
     ouinon "Voulez-vous faire une mise à jour ?" "$_DEFAULT"
     if [ "$ouinonREPONSE" = "oui" ]
     then
-        svn up
+        echo "Un peu de patience..."
+        svn up -q
+        if [ $? -ne 0 ]
+        then
+            echo "Il y a eu un problème de mise à jour."
+            exit 1
+        fi
+        echo "OK."
     fi
 fi
 
