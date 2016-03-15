@@ -31,6 +31,12 @@ Lors du choix de version que proposera le script, avant de décider d'une versio
 
 Alternativement, ```git clone https://github.com/JamesRezo/spip_svn_loader.git``` et un lien symbolique ```ln -s `pwd`/spip_svn_loader/spip_svn_loader /usr/local/bin/spip_svn_loader``` marche aussi bien...
 
+Avec [Homebrew](http://brew.sh/) pour les utilisateurs de Mac OS X:
+```bash
+brew tap JamesRezo/spip
+brew install spip_svn_loader
+```
+
 ## Usage
 
 Dans le répertoire cible, taper `spip_svn_loader`.
