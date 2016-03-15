@@ -9,7 +9,7 @@ Ce script permet de guider une personne souhaitant installer ou mettre à jour u
 
 ## Pré-requis
 
-- *bash*. Ce script est écrit en bash sur un Mac OS X (GNU bash, version 3.2.57). Pour s'en servir, il faut savoir ouvrir un terminal... :)
+- *bash*. Ce script est écrit en bash sur un Mac OS X (GNU bash, version 3.2.57) mais se veut compatible avec les plates-formes linux (testé sur Ubuntu 14 et mingw64). Pour s'en servir, il faut savoir ouvrir un terminal... :)
 - *subversion*. Ce script caclule et exécute des lignes de commandes du type `svn info`, `svn checkout`, `svn switch`, etc. Votre machine doit disposer d'un client subversion (`svn`) installé et configuré dans le `$PATH`.
 - *curl*. Pour installer et tenir à jour la liste des branches de référence décrite plus bas, ce script utilise la commande [cURL](https://curl.haxx.se/) qui doit, elle aussi, être configurée dans le `$PATH`.
 - *php*. Ce script vérifie la version de [PHP](http://www.php.net) installée et configurée comme les outils ci-dessus.
