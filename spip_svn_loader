@@ -1,5 +1,10 @@
 #!/bin/bash
 
+PWD_MD5=$(echo `pwd`"spip" |md5sum |awk '{print $1}')
+#$PWD_MD5=$(md5 -q -s `pwd`"spip")
+ 
+echo "MD5 = $PWD_MD5"
+
 function ouinon()
 {
     local ouinon
@@ -284,7 +289,7 @@ then
         _chemin=`pwd`
     else
         echo "Ce répertoire est sous SVN. SPIP va être installé dans un sous-répertoire."
-        for d in spip$(md5 -q -s `pwd`"spip") spip; do
+        for d in spip$PWD_MD5 spip; do
             if [ ! -d $d ];then
                 rep=$d
                 _chemin=`pwd`"/$rep"
