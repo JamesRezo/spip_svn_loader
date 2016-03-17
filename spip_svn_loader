@@ -168,7 +168,7 @@ then
     else
         _GET_FILE_CMD='wget'
         _CHECK_FILE_CMD='wget -q -S -O - ${SVN_SPIP_REMOTE_REFERENCES} 2>&1'
-        _GET_FILE_OPTIONS='-q -o'
+        _GET_FILE_OPTIONS='-q -O'
     fi
 else
     _GET_FILE_CMD='curl'
