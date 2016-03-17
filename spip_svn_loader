@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PWD_MD5=$(echo `pwd`"spip" |md5sum |awk '{print $1}')
+PWD_MD5=$(echo `pwd`"spip" |sha512sum |cut -d" " -f1)
 #$PWD_MD5=$(md5 -q -s `pwd`"spip")
 
 function ouinon()
