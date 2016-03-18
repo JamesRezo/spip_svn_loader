@@ -284,7 +284,7 @@ then
         _chemin=`pwd`
     else
         echo "Ce répertoire est sous SVN. SPIP va être installé dans un sous-répertoire."
-        for d in spip$(md5 -q -s `pwd`"spip") spip; do
+        for d in spip${RANDOM} spip; do
             if [ ! -d $d ];then
                 rep=$d
                 _chemin=`pwd`"/$rep"
