@@ -272,7 +272,7 @@ then
         _BRANCHE=$SVN_SPIP_TAGS"/"$brancheREPONSE
     fi
 
-    WC=`find . -type d -maxdepth 1 -name .svn -exec echo {} \;`
+    WC=`find . -maxdepth 1 -type d -name .svn -exec echo {} \;`
     if [ -z "$WC" ]; then
         #Warning si non vide
         VIDE=`ls -1a | grep -v -e "^\.$" | grep -v -e "^\.\.$" | wc -l`
