@@ -1,5 +1,8 @@
 #!/bin/bash
 
+PWD_MD5=$(echo `pwd`"spip" |sha512sum |cut -d" " -f1)
+#$PWD_MD5=$(md5 -q -s `pwd`"spip")
+
 function ouinon()
 {
     local ouinon
@@ -153,11 +156,24 @@ SVN_SPIP_REFERENCES=$HOME"/.spip/svn_loader_references.txt"
 SVN_SPIP_REMOTE_REFERENCES=http://james.at.rezo.net/svn_spip/svn_spip.txt
 
 #Vérifier que curl est dans le PATH
-curl --version >/dev/null 2>&1
+which curl >/dev/null 2>&1
 if [ $? -ne 0 ]
 then
-    echo "cURL n'est pas installé ou pas dans le PATH"
-    exit 1
+    # Tentative avec wget
+    which wget >/dev/null 2>&1
+    if [ $? -ne 0 ]
+    then
+        echo "ni wget ni cURL ne sont installés ou dans le PATH"
+        exit 1
+    else
+        _GET_FILE_CMD='wget'
+        _CHECK_FILE_CMD='wget -q -S -O - ${SVN_SPIP_REMOTE_REFERENCES} 2>&1'
+        _GET_FILE_OPTIONS='-q -O'
+    fi
+else
+    _GET_FILE_CMD='curl'
+    _CHECK_FILE_CMD='curl -I -s ${SVN_SPIP_REMOTE_REFERENCES}'
+    _GET_FILE_OPTIONS='-s -o'
 fi
 
 #Vérifier la présence du fichier des références
@@ -166,7 +182,7 @@ if [ -f ${SVN_SPIP_REFERENCES} ]
 then
     echo "Le fichier des références est présent."
     #Vérifier la fraicheur du fichier des références
-    _REMOTE=`curl -I -s ${SVN_SPIP_REMOTE_REFERENCES} | grep -e '^Last-Modified: ' | sed 's/^Last-Modified: \(.*\) GMT.*/\1/'`
+    _REMOTE=`${_CHECK_FILE_CMD} | grep -e '^Last-Modified: ' | sed 's/^Last-Modified: \(.*\) GMT.*/\1/'`
     _DARWIN=$(echo $OSTYPE | grep -i darwin)
     if [ -n "$_DARWIN" ]
     then
@@ -194,7 +210,7 @@ then
     then
         mkdir -p ${HOME}/.spip
     fi
-    curl -s -o ${SVN_SPIP_REFERENCES} ${SVN_SPIP_REMOTE_REFERENCES} >/dev/null
+    ${_GET_FILE_CMD} ${_GET_FILE_OPTIONS} ${SVN_SPIP_REFERENCES} ${SVN_SPIP_REMOTE_REFERENCES} >/dev/null
 fi
 
 #Vérifier que PHP est installé et a une version acceptable
@@ -284,7 +300,7 @@ then
         _chemin=`pwd`
     else
         echo "Ce répertoire est sous SVN. SPIP va être installé dans un sous-répertoire."
-        for d in spip$(md5 -q -s `pwd`"spip") spip; do
+        for d in spip$PWD_MD5 spip; do
             if [ ! -d $d ];then
                 rep=$d
                 _chemin=`pwd`"/$rep"
