@@ -63,3 +63,9 @@ Le script exploite, par défaut, une liste de branches que je considère comme _
 ## Usage avancé
 
 Ajouter le paramètre `tout` pour accéder à toutes les branches et tous les tags SPIP disponibles sur le dépôt officiel: ```spip_svn_loader tout```
+
+### Utilisation sans interaction
+
+* le paramètre `--dev` installe la branche de développement,
+* le paramètre `--maintenance`, qui nécessite un paramètre correspondant à une version de maintenace (ex: `2.1`, `3.0` ou `3.1`), installe une branche de maintenance,
+* le paramètre `--release`, qui nécessite un paramètre correspondant à une version stable (ex: `3.1.1` ou `2.1.29`) ou une version de test (ex: `3.0.0-beta2`), installe une version "détachée" de SVN.

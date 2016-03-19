@@ -129,14 +129,6 @@ function listeBranche()
     meilleurChoix
 }
 
-#Traitement des paramètres
-#tout afficher ?
-SVN_SPIP_TOUT_AFFICHER=0
-if [ "$1" = "tout" ]
-then
-    SVN_SPIP_TOUT_AFFICHER=1
-fi
-
 #Vérifier que svn est installé ou dans le PATH
 svn --version --quiet >/dev/null 2>&1
 if [ $? -ne 0 ]
@@ -212,9 +204,42 @@ else
     fi
 fi
 
+#Traitement des paramètres
+#tout afficher ?
+SVN_SPIP_TOUT_AFFICHER=0
+if [ "$1" = "tout" ]
+then
+    SVN_SPIP_TOUT_AFFICHER=1
+    shift
+fi
+
 SVN_SPIP_CHECKOUT=-1
 SVN_SPIP_UPDATE=0
 SVN_SPIP_SWITCH=0
+
+if [ "$1" = "--release" ]
+then
+    #Installer une release
+    _BRANCHE=$SVN_SPIP_TAGS"/spip-"$2
+    stabiliteREPONSE="release"
+    shift && shift
+    installerREPONSE=oui
+    detacherREPONSE=oui
+elif [ "$1" = "--maintenance" ]
+then
+    #Installer une branche de maintenance
+    _BRANCHE=$SVN_SPIP_BRANCHES"/spip-"$2
+    shift && shift
+    installerREPONSE=oui
+    detacherREPONSE=non
+elif [ "$1" = "--dev" ]
+then
+    #Installer la branche de développement
+    _BRANCHE=$SVN_SPIP_TRUNK
+    shift
+    installerREPONSE=oui
+    detacherREPONSE=non
+fi
 
 #Tester si le répertoire courant est un SPIP sous SVN
 svn info --show-item=repos-root-url 2>/dev/null | grep -e "^${SVN_SPIP_ROOT}$" >/dev/null
@@ -252,24 +277,27 @@ fi
 #Installation ?
 if [ $SVN_SPIP_CHECKOUT -ge 0 ]
 then
-    echo "Pour y remédier:"
-    choixStabilite "release"
-    if [ "$stabiliteREPONSE" = "dev" ]
+    if [ -z $_BRANCHE ]
     then
-        _BRANCHE=$SVN_SPIP_TRUNK
-    elif [[ "$stabiliteREPONSE" = "maintenance" ]]
-    then
-        printf "\nLes branches de maintenance:\n"
-        listeBranche $SVN_SPIP_BRANCHES $( [[ $SVN_SPIP_TOUT_AFFICHER -eq 1 ]] && echo "toutes")
-        selectionMeilleure $meilleureREPONSE $referencesLISTE
-        choixBranche $meilleureREPONSE
-        _BRANCHE=$SVN_SPIP_BRANCHES"/"$brancheREPONSE
-    else
-        printf "\nLes releases:\n"
-        listeBranche $SVN_SPIP_TAGS $( [[ $SVN_SPIP_TOUT_AFFICHER -eq 1 ]] && echo "toutes")
-        selectionMeilleure $meilleureREPONSE $referencesLISTE
-        choixBranche $meilleureREPONSE
-        _BRANCHE=$SVN_SPIP_TAGS"/"$brancheREPONSE
+        echo "Pour y remédier:"
+        choixStabilite "release"
+        if [ "$stabiliteREPONSE" = "dev" ]
+        then
+            _BRANCHE=$SVN_SPIP_TRUNK
+        elif [[ "$stabiliteREPONSE" = "maintenance" ]]
+        then
+            printf "\nLes branches de maintenance:\n"
+            listeBranche $SVN_SPIP_BRANCHES $( [[ $SVN_SPIP_TOUT_AFFICHER -eq 1 ]] && echo "toutes")
+            selectionMeilleure $meilleureREPONSE $referencesLISTE
+            choixBranche $meilleureREPONSE
+            _BRANCHE=$SVN_SPIP_BRANCHES"/"$brancheREPONSE
+        else
+            printf "\nLes releases:\n"
+            listeBranche $SVN_SPIP_TAGS $( [[ $SVN_SPIP_TOUT_AFFICHER -eq 1 ]] && echo "toutes")
+            selectionMeilleure $meilleureREPONSE $referencesLISTE
+            choixBranche $meilleureREPONSE
+            _BRANCHE=$SVN_SPIP_TAGS"/"$brancheREPONSE
+        fi
     fi
 
     WC=`find . -maxdepth 1 -type d -name .svn -exec echo {} \;`
@@ -292,15 +320,23 @@ then
         done
     fi
 
-    ouinon "Installer SPIP dans $_chemin ?" "oui"
-    if [ "$ouinonREPONSE" = "oui" ]
+    if [ -z $installerREPONSE ]
+    then
+        ouinon "Installer SPIP dans $_chemin ?" "oui"
+        installerREPONSE=$ouinonREPONSE
+    fi
+    if [ "$installerREPONSE" = "oui" ]
     then
         checkout="checkout"
         if [ "$stabiliteREPONSE" = "release" ]
         then
-            echo "Pour installer une release, il est recommandé de détacher le répertoire de SVN."
-            ouinon "Souhaitez-vous détacher cette installation de SVN ?" "oui"
-            if [ "$ouinonREPONSE" = "oui" ]
+            if [ -z $detacherREPONSE ]
+            then
+                echo "Pour installer une release, il est recommandé de détacher le répertoire de SVN."
+                ouinon "Souhaitez-vous détacher cette installation de SVN ?" "oui"
+                detacherREPONSE=$ouinonREPONSE
+            fi
+            if [ "$detacherREPONSE" = "oui" ]
             then
                 checkout="export"
                 if [ "$rep" = "." ]
