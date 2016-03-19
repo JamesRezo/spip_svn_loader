@@ -241,6 +241,16 @@ then
     detacherREPONSE=non
 fi
 
+if [ "$1" = "--detachee" ]
+then
+    shift
+    detacherREPONSE=oui
+elif [ "$1" = "--attachee" ]
+then
+    shift
+    detacherREPONSE=non
+fi
+
 #Tester si le répertoire courant est un SPIP sous SVN
 svn info --show-item=repos-root-url 2>/dev/null | grep -e "^${SVN_SPIP_ROOT}$" >/dev/null
 if [ $? -eq 1 ]
@@ -328,7 +338,7 @@ then
     if [ "$installerREPONSE" = "oui" ]
     then
         checkout="checkout"
-        if [ "$stabiliteREPONSE" = "release" ]
+        if [ "$stabiliteREPONSE" = "release" -o -n $detacherREPONSE ]
         then
             if [ -z $detacherREPONSE ]
             then
