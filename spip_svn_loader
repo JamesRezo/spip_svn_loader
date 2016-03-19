@@ -379,27 +379,34 @@ then
     else
         _DEFAULT=oui
     fi
-    ouinon "Voulez-vous basculer vers une autre branche ?" "$_DEFAULT"
-    if [ "$ouinonREPONSE" = "oui" ]
+    if [ -z $installerREPONSE ]
+    then
+        ouinon "Souhaitez-vous changer de branche ?" "$_DEFAULT"
+        installerREPONSE=$ouinonREPONSE
+    fi
+    if [ "$installerREPONSE" = "oui" ]
     then
         #TODO exclure la branche avec laquelle le répertoire est déjà asoscié
-        choixStabilite "release"
-        if [ "$stabiliteREPONSE" = "dev" ]
+        if [ -z $_BRANCHE ]
         then
-            _BRANCHE=$SVN_SPIP_TRUNK
-        elif [[ "$stabiliteREPONSE" = "maintenance" ]]
-        then
-            printf "\nLes branches de maintenance:\n"
-            listeBranche $SVN_SPIP_BRANCHES $( [[ $SVN_SPIP_TOUT_AFFICHER -eq 1 ]] && echo "toutes")
-            selectionMeilleure $meilleureREPONSE $referencesLISTE
-            choixBranche $meilleureREPONSE
-            _BRANCHE=$SVN_SPIP_BRANCHES"/"$brancheREPONSE
-        else
-            printf "\nLes releases:\n"
-            listeBranche $SVN_SPIP_TAGS $( [[ $SVN_SPIP_TOUT_AFFICHER -eq 1 ]] && echo "toutes")
-            selectionMeilleure $meilleureREPONSE $referencesLISTE
-            choixBranche $meilleureREPONSE
-            _BRANCHE=$SVN_SPIP_TAGS"/"$brancheREPONSE
+            choixStabilite "release"
+            if [ "$stabiliteREPONSE" = "dev" ]
+            then
+                _BRANCHE=$SVN_SPIP_TRUNK
+            elif [[ "$stabiliteREPONSE" = "maintenance" ]]
+            then
+                printf "\nLes branches de maintenance:\n"
+                listeBranche $SVN_SPIP_BRANCHES $( [[ $SVN_SPIP_TOUT_AFFICHER -eq 1 ]] && echo "toutes")
+                selectionMeilleure $meilleureREPONSE $referencesLISTE
+                choixBranche $meilleureREPONSE
+                _BRANCHE=$SVN_SPIP_BRANCHES"/"$brancheREPONSE
+            else
+                printf "\nLes releases:\n"
+                listeBranche $SVN_SPIP_TAGS $( [[ $SVN_SPIP_TOUT_AFFICHER -eq 1 ]] && echo "toutes")
+                selectionMeilleure $meilleureREPONSE $referencesLISTE
+                choixBranche $meilleureREPONSE
+                _BRANCHE=$SVN_SPIP_TAGS"/"$brancheREPONSE
+            fi
         fi
 
         echo "Bascule vers ^"$_BRANCHE"... (ça peut être long, patientez un peu)"

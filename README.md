@@ -26,7 +26,7 @@ Lors du choix de version que proposera le script, avant de décider d'une versio
 
 ## Installation
 
-- [Téléchargez](https://raw.githubusercontent.com/JamesRezo/spip_svn_loader/1.0.0-beta2/spip_svn_loader) le script dans le répertoire `/usr/local/bin` ou tout autre répertoire configuré dans votre `$PATH`.
+- [Téléchargez](https://raw.githubusercontent.com/JamesRezo/spip_svn_loader/1.0.0-beta3/spip_svn_loader) le script dans le répertoire `/usr/local/bin` ou tout autre répertoire configuré dans votre `$PATH`.
 - Le rendre exécutable ```chmod +x /usr/local/bin/spip_svn_loader``.
 
 Alternativement, ```git clone https://github.com/JamesRezo/spip_svn_loader.git``` et un lien symbolique ```ln -s `pwd`/spip_svn_loader/spip_svn_loader /usr/local/bin/spip_svn_loader``` marche aussi bien...
@@ -35,6 +35,11 @@ Avec [Homebrew](http://brew.sh/) pour les utilisateurs de Mac OS X:
 ```bash
 brew tap JamesRezo/spip
 brew install spip_svn_loader
+```
+
+ou bien pour mettre à jour
+```bash
+brew upgrade spip_svn_loader
 ```
 
 ## Usage
@@ -66,8 +71,15 @@ Ajouter le paramètre `tout` pour accéder à toutes les branches et tous les ta
 
 ### Utilisation sans interaction
 
+Dans le cas d'une installation:
+
 * le paramètre `--dev` installe la branche de développement,
 * le paramètre `--maintenance`, qui nécessite un paramètre correspondant à une version de maintenace (ex: `2.1`, `3.0` ou `3.1`), installe une branche de maintenance,
 * le paramètre `--release`, qui nécessite un paramètre correspondant à une version stable (ex: `3.1.1` ou `2.1.29`) ou une version de test (ex: `3.0.0-beta2`), installe une version "détachée" de SVN,
 * le paramètre `--detachee` associé à `--dev` ou `--maintenance` installe une branche de maintenance ou de développement "détachée" de SVN,
 * le paramètre `--attachee` associé à `--release` installe une branche de maintenance ou de développement qui reste associée au tag du dépôt SVN.
+
+Dans le cas d'une bascule:
+
+* les paramètres `--dev`, `--maintenance` et `--release` permettre de procéder sans interaction à la bascule vers la branche souhaitée,
+* les paramètres `--attachee` et `--detachee` ne sont pas pris en compte.
