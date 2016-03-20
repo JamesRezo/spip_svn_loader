@@ -153,6 +153,8 @@ function svninfo
             svn info | grep -e "^Relative URL: " | cut -d" " -f3
         elif [ "$1" = "last-changed-date" ]; then
             svn info | grep -e "^Last Changed Date: " | cut -d" " -f4,5
+        elif [ "$1" = "wc-root" ]; then
+            svn info | grep -e "^Working Copy Root Path: " | cut -d" " -f5
         fi
     fi
 }
