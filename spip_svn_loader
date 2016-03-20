@@ -129,12 +129,42 @@ function listeBranche()
     meilleurChoix
 }
 
+function versionPlusGrandeOuEgale
+{
+    local maVersion=$1
+    local versionComparee=$2
+
+    printf "${maVersion}\n${versionComparee}\n" | sort -t '.' -k 1,1 -k 2,2 -k 3,3 -n | tail -1 | grep "${maVersion}" | wc -l
+}
+
+function setSvnVersion
+{
+    SVN_VERSION=$(svn --version --quiet)
+}
+
+function svninfo
+{
+    if [ `versionPlusGrandeOuEgale ${SVN_VERSION} 1.9.0` -eq 1 ]; then
+        svn info --show-item=$1
+    else
+        if [ "$1" = "repos-root-url" ]; then
+            svn info | grep -e "^Repository Root: " | cut -d" " -f3
+        elif [ "$1" = "relative-url" ]; then
+            svn info | grep -e "^Relative URL: " | cut -d" " -f3
+        elif [ "$1" = "last-changed-date" ]; then
+            svn info | grep -e "^Last Changed Date: " | cut -d" " -f4,5
+        fi
+    fi
+}
+
 #Vérifier que svn est installé ou dans le PATH
 svn --version --quiet >/dev/null 2>&1
 if [ $? -ne 0 ]
 then
     echo "SVN n'est pas installé ou pas dans le PATH."
     exit 1
+else
+    setSvnVersion
 fi
 
 SVN_SPIP_ROOT=svn://trac.rezo.net/spip
@@ -252,7 +282,7 @@ then
 fi
 
 #Tester si le répertoire courant est un SPIP sous SVN
-svn info --show-item=repos-root-url 2>/dev/null | grep -e "^${SVN_SPIP_ROOT}$" >/dev/null
+svninfo repos-root-url 2>/dev/null | grep -e "^${SVN_SPIP_ROOT}$" >/dev/null
 if [ $? -eq 1 ]
 then
     echo "Ce répertoire n'est pas une Working Copy de SPIP."
@@ -263,7 +293,7 @@ else
     #Récupérer la branche de SPIP utilisée
     SVN_SPIP_UPDATE=0
     SVN_SPIP_SWITCH=0
-    SVN_SPIP_BRANCHE_LOCALE=`svn info --show-item=relative-url`
+    SVN_SPIP_BRANCHE_LOCALE=`svninfo relative-url`
     _UTILE=`grep -e "^${SVN_SPIP_BRANCHE_LOCALE}$" ${SVN_SPIP_REFERENCES}`
     if [ ! -z $_UTILE ]
     then
@@ -338,7 +368,7 @@ then
     if [ "$installerREPONSE" = "oui" ]
     then
         checkout="checkout"
-        if [ "$stabiliteREPONSE" = "release" -o -n $detacherREPONSE ]
+        if [ "$stabiliteREPONSE" = "release" -o -n "$detacherREPONSE" ]
         then
             if [ -z $detacherREPONSE ]
             then
