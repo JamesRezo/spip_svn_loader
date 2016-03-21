@@ -42,6 +42,14 @@ ou bien pour mettre à jour
 brew upgrade spip_svn_loader
 ```
 
+Sur plate-forme [debian](https://www.debian.org/) :
+- Ajouter la ligne `deb http://james.at.rezo.net/svn_spip/debs trusty main` au fichier `/etc/apt/sources.list`
+- Taper les commandes:
+```bash
+apt-get update
+apt-get install spip-tools
+```
+
 ## Usage
 
 Dans le répertoire cible, taper `spip_svn_loader`.
