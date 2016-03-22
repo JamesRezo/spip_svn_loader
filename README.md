@@ -89,5 +89,5 @@ Dans le cas d'une installation:
 
 Dans le cas d'une bascule:
 
-* les paramètres `--dev`, `--maintenance` et `--release` permettre de procéder sans interaction à la bascule vers la branche souhaitée,
+* les paramètres `--dev`, `--maintenance` et `--release` permettent de procéder sans interaction à la bascule vers la branche souhaitée,
 * les paramètres `--attachee` et `--detachee` ne sont pas pris en compte.
