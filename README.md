@@ -42,13 +42,15 @@ ou bien pour mettre à jour
 brew upgrade spip_svn_loader
 ```
 
-Sur plate-forme [debian](https://www.debian.org/) :
-- Ajouter la ligne `deb http://james.at.rezo.net/svn_spip/debs trusty main` au fichier `/etc/apt/sources.list`
-- Taper les commandes:
+Sur plate-forme [debian](https://www.debian.org/), en tant que root, taper les commandes :
 ```bash
+echo "deb http://james.at.rezo.net/svn_spip/debs trusty main" > /etc/apt/sources.list.d/spip-tool.list
+wget -O - http://james.at.rezo.net/svn_spip/JamesRezo.gpg.key | apt-key add -
 apt-get update
 apt-get install spip-tools
 ```
+
+Selon la distribution debian, remplacer `trusty`, par `precise`, `wheezy` ou `jessie`
 
 ## Usage
 
