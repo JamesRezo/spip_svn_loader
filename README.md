@@ -13,6 +13,7 @@ Ce script permet de guider une personne souhaitant installer ou mettre à jour u
 - *subversion*. Ce script caclule et exécute des lignes de commandes du type `svn info`, `svn checkout`, `svn switch`, etc. Votre machine doit disposer d'un client subversion (`svn`) installé et configuré dans le `$PATH`.
 - *curl*. Pour installer et tenir à jour la liste des branches de référence décrite plus bas, ce script utilise la commande [cURL](https://curl.haxx.se/) qui doit, elle aussi, être configurée dans le `$PATH`.
 - *php*. Ce script vérifie la version de [PHP](http://www.php.net) installée et configurée comme les outils ci-dessus.
+- Facultativement, *zip* et *unzip*. En cas de procédure de "réparation", les données physiques de l'instance SPIP sont sauvegardées puis restaurées avec ces outils.
 
 S'il manque un des outils ci-dessus, le script vous le dira.
 
@@ -36,18 +37,22 @@ Avec [Homebrew](http://brew.sh/) pour les utilisateurs de Mac OS X:
 brew tap JamesRezo/spip
 brew install spip_svn_loader
 ```
-
-ou bien pour mettre à jour
+ou bien pour mettre à jour:
 ```bash
 brew upgrade spip_svn_loader
 ```
 
 Sur plate-forme [debian](https://www.debian.org/), en tant que root, taper les commandes :
 ```bash
-echo "deb http://james.at.rezo.net/svn_spip/debs trusty main" > /etc/apt/sources.list.d/spip-tool.list
+echo "deb http://james.at.rezo.net/svn_spip/debs trusty main" > /etc/apt/sources.list.d/spip-tools.list
 wget -O - http://james.at.rezo.net/svn_spip/JamesRezo.gpg.key | apt-key add -
 apt-get update
 apt-get install spip-tools
+```
+ou bien pour mettre à jour:
+```bash
+apt-get update
+apt-get upgrade spip-tools
 ```
 
 Selon la distribution debian, remplacer `trusty`, par `precise`, `wheezy` ou `jessie`
@@ -70,6 +75,10 @@ Qu'il soit vide ou pas, le script tentera d'y installer (`svn checkout`) la vers
 ### Le répertoire cible est déjà associé à une branche SVN d'autre chose.
 
 Si le répertoire est déjà associé à un dépôt SVN (_working copy_), le script tentera d'installer la version choisie dans un sous-répertoire `spip` qui sera créé pour l'occasion. Comme ci-dessus, s'il s'agit d'une `release`, la même proposition de détachement sera faite.
+
+### Réparation automatique
+
+Le script proposera d'exécuter une "réparation" dans le cas où la commande précédente a provoqué une erreur. Cette procédure, qui nécessite la présence des utilitaires `zip` et `unzip`, tente, après avoir effectué un sauvegarde des données physiques de l'instance SPIP, de rétablir l'association avec le dépôt SVN, puis restaure les données sauvegardées.
 
 ## Liste des branches de référence
 

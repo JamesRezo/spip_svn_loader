@@ -159,6 +159,30 @@ function svninfo
     fi
 }
 
+function reparation
+{
+    local hasard=$RANDOM
+    local fichier=spip${hasard}.zip
+    local nexistepas=0
+
+    if [ ! -d squelettes ]; then
+        nexistepas=1
+        mkdir squelettes
+    fi
+
+    echo "Sauvegarge des données (configuration, documents, plugins, ...)"
+    zip -q -r $fichier plugins config IMG -x config/ecran_securite.php config/remove.txt IMG/remove.txt && mv $fichier squelettes
+    echo "Tentative de réparation ..."
+    svn cleanup --remove-unversioned --include-externals -q && svn revert -R -q . && svn up -q
+    #TODO svn: E205011: Failure occurred processing one or more externals definitions
+    echo "Restauration des données ..."
+    mv squelettes/$fichier . && unzip -q $fichier && rm $fichier
+    
+    if [ $nexistepas -eq 1 ]; then
+        rmdir squelettes
+    fi
+}
+
 #Vérifier que svn est installé ou dans le PATH
 svn --version --quiet >/dev/null 2>&1
 if [ $? -ne 0 ]
@@ -388,11 +412,18 @@ then
             fi
         fi
         echo "Parfait ! Un peu de patience, maintenant..."
-        svn $checkout -q ${SVN_SPIP_ROOT}${_BRANCHE} $rep
+        svn $checkout --non-interactive -q ${SVN_SPIP_ROOT}${_BRANCHE} $rep
         if [ $? -ne 0 ]
         then
             echo "Il y a eu un problème d'installation."
-            exit 1
+            ouinon "On tente une réparation ?" "oui"
+            reparationREPONSE=$ouinonREPONSE
+            if [ "$reparationREPONSE" = "oui" ]
+            then
+                reparation
+            else
+                exit 1
+            fi
         fi
         echo "OK."
         exit 0
@@ -442,11 +473,18 @@ then
         fi
 
         echo "Bascule vers ^"$_BRANCHE"... (ça peut être long, patientez un peu)"
-        svn switch -q ^${_BRANCHE}
+        svn switch --non-interactive -q ^${_BRANCHE}
         if [ $? -ne 0 ]
         then
             echo "Il y a eu un problème de bascule."
-            exit 1
+            ouinon "On tente une réparation ?" "oui"
+            reparationREPONSE=$ouinonREPONSE
+            if [ "$reparationREPONSE" = "oui" ]
+            then
+                reparation
+            else
+                exit 1
+            fi
         fi
         echo "OK."
         exit 0
@@ -466,11 +504,18 @@ then
     if [ "$ouinonREPONSE" = "oui" ]
     then
         echo "Un peu de patience..."
-        svn up -q
+        svn up --non-interactive -q
         if [ $? -ne 0 ]
         then
             echo "Il y a eu un problème de mise à jour."
-            exit 1
+            ouinon "On tente une réparation ?" "oui"
+            reparationREPONSE=$ouinonREPONSE
+            if [ "$reparationREPONSE" = "oui" ]
+            then
+                reparation
+            else
+                exit 1
+            fi
         fi
         echo "OK."
     fi
