@@ -1,0 +1,9 @@
+Package: spip-tools
+Version: 1.0.0-beta4
+Section: base
+Priority: optional
+Architecture: all
+Depends: bash, curl, subversion, php5-cli
+Maintainer: JamesRezo <james@rezo.net>
+Description: Installer et mettre a jour SPIP avec SVN
+Homepage: https://github.com/JamesRezo/spip_svn_loader

@@ -1,0 +1,5 @@
+#!/bin/bash
+
+ln -s /opt/spip-tools/bin/spip_svn_loader /usr/local/bin/spip_svn_loader
+
+exit 0
