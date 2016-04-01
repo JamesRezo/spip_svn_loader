@@ -13,7 +13,7 @@ Ce script permet de guider une personne souhaitant installer ou mettre à jour u
 - *subversion*. Ce script caclule et exécute des lignes de commandes du type `svn info`, `svn checkout`, `svn switch`, etc. Votre machine doit disposer d'un client subversion (`svn`) installé et configuré dans le `$PATH`.
 - *curl*. Pour installer et tenir à jour la liste des branches de référence décrite plus bas, ce script utilise la commande [cURL](https://curl.haxx.se/) qui doit, elle aussi, être configurée dans le `$PATH`.
 - *php*. Ce script vérifie la version de [PHP](http://www.php.net) installée et configurée comme les outils ci-dessus.
-- Facultativement, *zip* et *unzip*. En cas de procédure de "réparation", les données physiques de l'instance SPIP sont sauvegardées puis restaurées avec ces outils.
+- Facultativement, *zip* et *unzip*. En cas de procédure de "[réparation](#réparation-automatique)", les données physiques de l'instance SPIP sont sauvegardées puis restaurées avec ces outils.
 
 S'il manque un des outils ci-dessus, le script vous le dira.
 
