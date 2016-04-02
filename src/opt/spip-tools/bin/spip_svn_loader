@@ -173,8 +173,29 @@ function reparation
     echo "Sauvegarde des données SPIP (configuration, documents, plugins, ...)"
     zip -q -r $fichier plugins config IMG -x config/ecran_securite.php config/remove.txt IMG/remove.txt && mv $fichier squelettes
     echo "Tentative de réparation ..."
-    svn cleanup --remove-unversioned --include-externals -q && svn revert -R -q . && svn up -q
-    #TODO svn: E205011: Failure occurred processing one or more externals definitions
+    if [ `versionPlusGrandeOuEgale ${SVN_VERSION} 1.9.0` -eq 1 ]; then
+        svn cleanup --remove-unversioned --include-externals -q && svn revert -R -q . && svn up -q 2>/dev/null
+        if [ $? -ne 0 ]; then
+            #svn: E205011: Failure occurred processing one or more externals definitions
+            rm -Rf plugins-dist
+            rm -Rf squelettes-dist
+            svn up --force -q
+        fi
+    else
+        #svn cleanup insuffisant avec une version de SVN ancienne...
+        svn cleanup && svn revert -R -q .
+        EFFACER=$(svn st --ignore-externals | grep -e '^?' | tr -d "?[:blank:]")
+        for rmfichier in $(printf "%s\n" $EFFACER); do
+            if [ ! -d $rmfichier ];then
+                rm $rmfichier
+            else
+                rm -Rf $rmfichier
+            fi
+        done
+        rm -Rf plugins-dist
+        rm -Rf squelettes-dist
+        svn up --force -q
+    fi
     echo "Restauration des données ..."
     mv squelettes/$fichier . && unzip -q $fichier && rm $fichier
     
@@ -440,7 +461,18 @@ then
         fi
         echo "Parfait ! Un peu de patience, maintenant..."
         svn $checkout --non-interactive -q ${SVN_SPIP_ROOT}${_BRANCHE} $rep
-        if [ $? -ne 0 ]
+        _ERREUR=$?
+        #SI svn checkout < 1.9.0 ET conflicts ALORS svn st + qqchose parce que $?=0
+        if [ `versionPlusGrandeOuEgale ${SVN_VERSION} 1.9.0` -ne 1 ]
+        then
+            checkout=$(echo $checkout | grep "export" | wc -l)
+            if [ $checkout -eq 0 ]
+            then
+                test `svn st | grep "Summary of conflicts" | wc -l` -eq 0
+                _ERREUR=$?
+            fi
+        fi
+        if [ $_ERREUR -ne 0 ]
         then
             echo "Il y a eu un problème d'installation."
             if [ $ARCHIVES_POSSIBLES -ge 3 ]
@@ -515,7 +547,14 @@ then
         fi
         echo "Bascule vers ^"$_BRANCHE"... (ça peut être long, patientez un peu)"
         svn switch --non-interactive -q ^${_BRANCHE}
-        if [ $? -ne 0 ]
+        _ERREUR=$?
+        #SI svn switch < 1.9.0 ET conflicts ALORS svn st + qqchose parce que $?=0
+        if [ `versionPlusGrandeOuEgale ${SVN_VERSION} 1.9.0` -ne 1 ]
+        then
+            test `svn st | grep "Summary of conflicts" | wc -l` -eq 0
+            _ERREUR=$?
+        fi
+        if [ $_ERREUR -ne 0 ]
         then
             echo "Il y a eu un problème de bascule."
             if [ $ARCHIVES_POSSIBLES -ge 3 ]
@@ -551,7 +590,14 @@ then
     then
         echo "Un peu de patience..."
         svn up --non-interactive -q
-        if [ $? -ne 0 ]
+        _ERREUR=$?
+        #SI svn update < 1.9.0 ET conflicts ALORS svn st + qqchose parce que $?=0
+        if [ `versionPlusGrandeOuEgale ${SVN_VERSION} 1.9.0` -ne 1 ]
+        then
+            test `svn st | grep "Summary of conflicts" | wc -l` -eq 0
+            _ERREUR=$?
+        fi
+        if [ $_ERREUR -ne 0 ]
         then
             echo "Il y a eu un problème de mise à jour."
             if [ $ARCHIVES_POSSIBLES -ge 3 ]
