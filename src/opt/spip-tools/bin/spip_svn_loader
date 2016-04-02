@@ -464,7 +464,6 @@ then
     fi
     if [ "$installerREPONSE" = "oui" ]
     then
-        #TODO exclure la branche avec laquelle le répertoire est déjà asoscié
         if [ -z $_BRANCHE ]
         then
             choixStabilite "release"
@@ -487,6 +486,16 @@ then
             fi
         fi
 
+        #Comparer $_BRANCHE et $SVN_SPIP_BRANCHE_LOCALE
+        if [ "^$_BRANCHE" = "$SVN_SPIP_BRANCHE_LOCALE" ]
+        then
+            echo "C'est un peu bêbête, c'est la branche où vous vous trouvez ..."
+            ouinon "On fait la bascule quand même ?" "non"
+            if [ "$ouinonREPONSE" = "non" ]
+            then
+                exit 0
+            fi
+        fi
         echo "Bascule vers ^"$_BRANCHE"... (ça peut être long, patientez un peu)"
         svn switch --non-interactive -q ^${_BRANCHE}
         if [ $? -ne 0 ]
