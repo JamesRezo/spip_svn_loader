@@ -1,0 +1,173 @@
+#!/bin/bash
+
+source spip_communs
+
+function doPackage
+{
+    local releaseMode=$1
+    local version=$2
+    local branche=$3
+    local _branche
+    
+    if [ "$releaseMode" = "release" ];then
+        install="--release "$version
+        rep="stable"
+        _branche=release
+    elif [ "$releaseMode" = "test" ]; then
+        install="--release "$version
+        rep="test"
+        _branche=release
+    elif [ "$releaseMode" = "dev" ]; then
+        if [ -z "$version" ]; then
+            branche=dev
+            install="--dev --detachee"
+            _branche=dev
+            version=dev
+        else
+            branche=$version
+            install="--maintenance  "$branche" --detachee"
+            _branche=maintenance
+        fi
+        local _REMOTE=`svninfo last-changed-date $(computeUrl $_branche $version) | sed 's/\(.*\)\.[0-9]*Z/\1/'`
+        _REMOTE=`date2timestamp "${_REMOTE}"`
+        local _LOCALE=`[[ -f archives/spip-${version}.zip ]] && stat2timestamp archives/spip-${version}.zip || echo 0`
+        if [ $_REMOTE -gt $_LOCALE ]; then
+            rm -f archives/spip-${version}.zip
+        fi
+        rep="dev"
+    fi
+
+    if [  ! -f archives/spip-${version}.zip ];then
+        cleanSpipDir andGo
+        echo && echo "Téléchargement '"$version"' ..."
+        spip_svn_loader $install
+        #TODO fabrique du fichier svn.revision: pour dev -> spip-dev alias à trouver quelque part
+        echo && echo "Archivage '"$version"' ..."
+        cd .. && zip -q -r -ll -o spip-${version}.zip spip/* && cleanSpipDir
+        mv spip-${version}.zip archives/
+        rm -f $(echo $PWD"/public/"$rep"/spip-${branche}.zip")
+        ln -s $(echo $PWD"/archives/spip-${version}.zip") $(echo $PWD"/public/"$rep"/spip-${branche}.zip")
+        #TODO Vérif darwin vs linux
+        touch -h -r archives/spip-${version}.zip public/${rep}/spip-${branche}.zip
+        echo "Ok."
+    fi
+}
+
+function doReleasePackage
+{
+    doPackage "release" $1 $2
+}
+
+function doTestingPackage
+{
+    doPackage "test" $1 $2
+}
+
+function doMaintenancePackage
+{
+    doPackage "dev" $1
+}
+
+function doDevPackage
+{
+    doPackage "dev"
+}
+
+#Vérifier la présence de Zip
+setZipVersion
+if [ $(( $ARCHIVES_POSSIBLES & 1 )) -eq 0 ]
+then
+    echo "Zip n'est pas installée ou pas dans le PATH."
+    exit 1
+fi
+
+#Vérifier la présence du fichier des références
+SVN_SPIP_REMOTE_REFERENCES_DOWNLOAD=0
+if [ -f ${SVN_SPIP_REFERENCES} ]
+then
+    echo "Le fichier des références est présent."
+    #Vérifier la fraicheur du fichier des références
+    _REMOTE=`curl -I -s ${SVN_SPIP_REMOTE_REFERENCES} | grep -e '^Last-Modified: ' | sed 's/^Last-Modified: \(.*\) GMT.*/\1/'`
+    _LOCALE=`stat2timestamp ${SVN_SPIP_REFERENCES}`
+    _REMOTE=`date2timestamp "${_REMOTE}"`
+    if [ "$_REMOTE" -gt "$_LOCALE" ]
+    then
+        echo "Mais il n'est plus à jour."
+        SVN_SPIP_REMOTE_REFERENCES_DOWNLOAD=1
+    fi
+else
+    echo "Fichier des références absent."
+    SVN_SPIP_REMOTE_REFERENCES_DOWNLOAD=1
+fi
+
+#Mettre à jour le fichier des références
+if [ $SVN_SPIP_REMOTE_REFERENCES_DOWNLOAD -eq 1 ]
+then
+    echo "Téléchargement en cours..."
+    if [ ! -d ${HOME}/.spip ]
+    then
+        mkdir -p ${HOME}/.spip
+    fi
+    curl -s -o ${SVN_SPIP_REFERENCES} ${SVN_SPIP_REMOTE_REFERENCES} >/dev/null
+fi
+
+#Versions stables
+#for version in $(svn ls ${SVN_SPIP_ROOT}${SVN_SPIP_TAGS} | sed 's/spip-\(.*\)\/$/\1/')
+for version in $(grep tags ${SVN_SPIP_REFERENCES} | sed 's/.*spip-\(.*\)$/\1/')
+do
+    echo $version | grep -e "-[a-z]" > /dev/null
+    if [ $? -eq 0 ]
+    then
+        #Versions de test
+        doTestingPackage $version $version
+    else
+        branche=$(echo $version | sed 's/^\([0-9]*\.[0-9]*\).*/\1/')
+        doReleasePackage $version $branche
+    fi
+done
+
+#Branches de maintenance
+#for version in $(svn ls ${SVN_SPIP_ROOT}${SVN_SPIP_BRANCHES} | sed 's/spip-\(.*\)\/$/\1/')
+for version in $(grep branches ${SVN_SPIP_REFERENCES} | sed 's/.*spip-\(.*\)$/\1/')
+do
+    doMaintenancePackage $version
+done
+
+#Branche de développement
+doDevPackage
+
+#Ménage Symlinks
+for rep in $(printf "stable\ntest\ndev")
+do
+    for link in $(ls -1 public/$rep)
+    do
+        grep `readlink public/$rep/$link | sed 's/.*\(spip-.*\)\.zip$/\1/'` ${SVN_SPIP_REFERENCES} > /dev/null || [[ "public/$rep/$link" = "public/dev/spip-dev.zip" ]]
+        if [ $? -ne 0 ]
+        then
+            rm -f public/$rep/$link
+        fi
+    done
+done
+
+#SHA checksums
+echo -n > public/.sha512sum.txt
+for rep in $(printf "stable\ntest\ndev")
+do
+    for link in $(ls -1 public/$rep)
+    do
+        package=$(readlink public/$rep/$link | sed "s/.*archives\/\(.*\)/archives\/\1/")
+        if [ estDarwin ]
+        then 
+            shasum -a 512 $package >> public/.sha512sum.txt
+        else
+            sha512sum $package >> public/.sha512sum.txt
+        fi
+    done
+done
+
+echo "Packages :" && ls -lstrh archives/
+echo "Stable :" && ls -l public/stable/
+echo "Test :" && ls -l public/test/
+echo "Dev&Maintenance :" && ls -l public/dev/
+
+exit 0

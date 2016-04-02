@@ -1,0 +1,275 @@
+#!/bin/bash
+
+# Constantes&Globales
+
+SVN_VERSION=
+SVN_SPIP_ROOT=svn://trac.rezo.net/spip
+SVN_SPIP_TRUNK=/spip
+SVN_SPIP_BRANCHES=/branches
+SVN_SPIP_TAGS=/tags
+SVN_SPIP_REFERENCES=${HOME}"/.spip/svn_loader_references.txt"
+SVN_SPIP_REMOTE_REFERENCES=http://james.at.rezo.net/svn_spip/svn_spip.txt
+CURL_VESRION=
+PHP_VERSION=
+ZIP_VERSION=
+ARCHIVES_POSSIBLES=
+
+# Interactions
+
+# ouinon: pose une question qui attend oui ou non comme réponse
+#
+# Usage ouinon "Question" "réponse par défaut"
+#       if [ $? -eq 1 ]; then
+#           echo "réponse positive"
+#       else
+#           echo "réponse négative"
+#       fi
+#
+# @example ouinon "Bonjour, tu vas bien ?" "oui"
+#
+# @return 1 si oui, 0 sinon
+function ouinon()
+{
+    local ouinon=
+    local question=$1
+    local defaut=$2
+
+    : ${question:="OK ?"}
+    : ${defaut:="oui"}
+
+    while [ -z "$ouinon" ]; do
+        read -p "$question [$defaut]:" ouinon
+        if [ -z "$ouinon" ]; then
+            ouinon=$defaut
+        fi
+        ouinon=$(echo "$ouinon" | tr [:upper:] [:lower:] | grep -e "^\(oui\|non\)$")
+    done
+
+    test "$ouinon" != "oui"
+}
+
+# stabilite: pose une question qui attend dev, maintenance ou release comme réponse
+#
+# Usage choix=$(stabilite)
+#       if [ "$choix" = "dev" ]; then
+#           echo "la branche de développement a été choisie"
+#       elif [ "$choix" = "maintenance" ]; then
+#           echo "une branche de maintenance est à choisir"
+#       else
+#           echo "une version stable ou de test est à choisir"
+#       fi
+#
+# @example stabilite dev
+#
+# @return "dev", "maintenance" ou "release"
+function stabilite()
+{
+    local stabilite=
+    local defaut=$1
+
+    : ${defaut:="release"}
+
+    while [ -z "$stabilite" ]; do
+        read -p "Quel niveau de stabilite souhaitez-vous (dev, maintenance ou release) ? [$defaut]:" stabilite
+        if [ -z "$stabilite" ]; then
+            stabilite=$defaut
+        fi
+        stabilite=$(echo "$stabilite" | tr [:upper:] [:lower:] | grep -e "^\(dev\|maintenance\|release\)$")
+    done
+
+    echo $stabilite
+}
+
+# Semver
+
+# versionPlusGrandeOuEgale: compare deux versions sémantiques
+#
+# Usage versionPlusGrandeOuEgale maVersion versionDeComparaison
+#       if [ $? -eq 1]; then
+#           echo "maVersion est plus grande ou égale"
+#       else
+#           echo "maVersion est plus petite"
+#       fi
+#
+# @return 1 si maVersion est plus grande ou égale à versionDeComparison, 0 sinon
+function versionPlusGrandeOuEgale
+{
+    #TODO bug à corriger
+    #printf "${maVersion}\n${versionComparee}\n" | sort -t '.' -k 1,1 -k 2,2 -k 3,3 -n | tail -1 | grep "${maVersion}" | wc -l
+    test "${1}" != "$(printf "${1}\n${2}\n" | sort -t '.' -k 1,1 -k 2,2 -k 3,3 -n | tail -1 | grep "${1}")"
+}
+
+# Subversion
+
+# setSvnVersion: Vérifier que svn est installé et dans le PATH
+#
+# Usage setSvnVersion
+#       echo ${SVN_VERSION}
+function setSvnVersion
+{
+    svn --version --quiet > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        echo "SVN n'est pas installé ou pas dans le PATH."
+        exit 1
+    fi
+    SVN_VERSION=$(svn --version --quiet)
+}
+
+# svninfo: Récupérer les meta-informations d'une Working Copy SVN
+#
+# Usage svninfo <metadata> [<url>]
+#       ou <metadata> peut valoir :
+#       - repos-root-url la racine du dépôt SVN, 
+#       - relative-url la branche, 
+#       - last-changed-date la date de dernière modification de la branche ou 
+#       - wc-root le répertoire système associé à la branche
+function svninfo
+{
+    if [ $(versionPlusGrandeOuEgale ${SVN_VERSION} 1.9.0) ]; then
+        svn info --show-item=$1 $2
+    else
+        if [ "$1" = "repos-root-url" ]; then
+            svn info $2 | grep -e "^Repository Root: " | cut -d" " -f3
+        elif [ "$1" = "relative-url" ]; then
+            svn info $2 | grep -e "^Relative URL: " | cut -d" " -f3
+        elif [ "$1" = "last-changed-date" ]; then
+            svn info $2 | grep -e "^Last Changed Date: " | cut -d" " -f4,5
+        elif [ "$1" = "wc-root" ]; then
+            svn info $2 | grep -e "^Working Copy Root Path: " | cut -d" " -f5
+        fi
+    fi
+}
+
+# computeUrl: Calculer l'url absolue d'une branche SVN
+#
+# Usage echo $(computeUrl dev)
+#       echo $(computeUrl maintenance 3.1)
+#       echo $(computeUrl release 3.1.1)
+function computeUrl
+{
+    if [ "$1" = "dev" ]; then
+        eval echo ${SVN_SPIP_ROOT}${SVN_SPIP_TRUNK}
+    elif [ "$1" = "maintenance" ]; then
+        eval echo ${SVN_SPIP_ROOT}${SVN_SPIP_BRANCHES}"/spip-"$2
+    elif [ "$1" = "release" ]; then
+        eval echo ${SVN_SPIP_ROOT}${SVN_SPIP_TAGS}"/spip-"$2
+    fi
+}
+
+# cUrl
+
+# setCurlVersion: Vérifier que curl est installé et dans le PATH
+#
+# Usage setCurlVersion
+#       echo ${CURL_VERSION}
+function setCurlVersion
+{
+    curl --version > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        echo "cURL n'est pas installé ou pas dans le PATH."
+        exit 1
+    fi
+    CURL_VERSION=$(curl --version | grep -e "^curl" | cut -d" " -f2)
+}
+
+# PHP
+
+# setPhpVersion: Vérifier que php est installé, a une version acceptable et dans le PATH
+#
+# Usage setPhpVersion
+#       echo ${PHP_VERSION}
+function setPhpVersion
+{
+    php -v >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        echo "PHP n'est pas installé ou pas dans le PATH."
+        exit 1
+    fi
+    PHP_VERSION=$(php -v | grep -e "^PHP" | cut -d" " -f2)
+
+    local _version=`php -r "echo PHP_VERSION_ID;"`
+    if [ $_version -lt 50300 ]
+    then
+        echo "Ca va être chaud avec une version aussi vielle de PHP ! Je préfère m'arrêter là..."
+        exit 1
+    fi
+}
+
+# ZIP
+
+# setZipVersion: Vérifier que zip et unzip sont installées
+# 
+# Usage setZipVersion
+#       echo [[ $(( $ARCHIVES_POSSIBLES & 1 )) -ne 0 ]] && zip ...
+#       echo [[ $ARCHIVES_POSSIBLES -ge 2 ]] && unzip ...
+function setZipVersion
+{
+    ARCHIVES_POSSIBLES=0
+    zip -v >/dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        ARCHIVES_POSSIBLES=$(expr $ARCHIVES_POSSIBLES + 1)
+        ZIP_VERSION=$(zip --version | grep "This is Zip" | cut -d" " -f4)
+    fi
+    unzip -v >/dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        ARCHIVES_POSSIBLES=$(expr $ARCHIVES_POSSIBLES + 2)
+    fi
+}
+
+# Darwin versus Linux
+
+function estDarwin
+{
+    test $(echo "$OSTYPE" | tr [:upper:] [:lower:] | grep -e "^darwin$")
+}
+
+# Usage date2timestamp "Tue, 22 Mar 2016 00:07:53"
+#       date2timestamp "2016-03-22 00:07:53"
+function date2timestamp
+{
+    if [ estDarwin ]; then
+        echo $1 | grep "," > /dev/null
+        if [ $? -eq 0 ]; then
+            local _date=`LANG=en_US.UTF8 && date -j -f "%a, %d %b %Y %T" "${1}" "+%s"`
+            echo $_date
+        else
+            date -j -f "%Y-%m-%d %H:%M:%S" "${1}" "+%s"
+        fi
+    else
+        LANG=en_US.UTF8 && date -d "${1}" "+%s"
+    fi
+}
+
+# Usage stat2timestamp <fichier>
+function stat2timestamp
+{
+    if [ estDarwin ]; then
+        stat -f %m ${1}
+    else
+        stat -c %Y ${1}
+    fi
+}
+
+# Références
+
+# function svnCheckReferences {}
+# function svnDownloadReferences {}
+
+# SPIP
+
+# cleanSpipDir: Créer un répertoire 'spip' vide dans le réperoire courant
+#
+# Usage cleanSpipDir
+#       #Se déplacer dans le répertoire créé
+#       cleanSpipDir andGo
+function cleanSpipDir
+{
+    if [ -d spip ]; then
+        rm -Rf spip
+    fi
+    mkdir spip
+    touch spip/.gitkeep
+    if [ "$1" = "andGo" ]; then
+        cd spip
+    fi
+}
