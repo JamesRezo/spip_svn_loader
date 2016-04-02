@@ -27,7 +27,7 @@ Lors du choix de version que proposera le script, avant de décider d'une versio
 
 ## Installation
 
-- [Téléchargez](https://raw.githubusercontent.com/JamesRezo/spip_svn_loader/1.0.0-beta4/spip_svn_loader) le script dans le répertoire `/usr/local/bin` ou tout autre répertoire configuré dans votre `$PATH`.
+- [Téléchargez](https://raw.githubusercontent.com/JamesRezo/spip_svn_loader/1.0.0-beta6/src/opt/spip-tools/bin/spip_svn_loader) le script dans le répertoire `/usr/local/bin` ou tout autre répertoire configuré dans votre `$PATH`.
 - Le rendre exécutable ```chmod +x /usr/local/bin/spip_svn_loader``.
 
 Alternativement, ```git clone https://github.com/JamesRezo/spip_svn_loader.git``` et un lien symbolique ```ln -s `pwd`/spip_svn_loader/src/opt/spip-tools/bin/spip_svn_loader /usr/local/bin/spip_svn_loader``` marche aussi bien...
