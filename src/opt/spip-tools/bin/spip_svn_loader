@@ -260,6 +260,16 @@ else
     fi
 fi
 
+ARCHIVES_POSSIBLES=0
+zip -v >/dev/null 2>&1
+if [ $? -eq 0 ]; then
+    ARCHIVES_POSSIBLES=$(expr $ARCHIVES_POSSIBLES + 1)
+fi
+unzip -v >/dev/null 2>&1
+if [ $? -eq 0 ]; then
+    ARCHIVES_POSSIBLES=$(expr $ARCHIVES_POSSIBLES + 2)
+fi
+
 #Traitement des paramètres
 #tout afficher ?
 SVN_SPIP_TOUT_AFFICHER=0
@@ -416,11 +426,16 @@ then
         if [ $? -ne 0 ]
         then
             echo "Il y a eu un problème d'installation."
-            ouinon "On tente une réparation ?" "oui"
-            reparationREPONSE=$ouinonREPONSE
-            if [ "$reparationREPONSE" = "oui" ]
+            if [ $ARCHIVES_POSSIBLES -ge 3 ]
             then
-                reparation
+                ouinon "On tente une réparation ?" "oui"
+                reparationREPONSE=$ouinonREPONSE
+                if [ "$reparationREPONSE" = "oui" ]
+                then
+                    reparation
+                else
+                    exit 1
+                fi
             else
                 exit 1
             fi
@@ -477,11 +492,16 @@ then
         if [ $? -ne 0 ]
         then
             echo "Il y a eu un problème de bascule."
-            ouinon "On tente une réparation ?" "oui"
-            reparationREPONSE=$ouinonREPONSE
-            if [ "$reparationREPONSE" = "oui" ]
+            if [ $ARCHIVES_POSSIBLES -ge 3 ]
             then
-                reparation
+                ouinon "On tente une réparation ?" "oui"
+                reparationREPONSE=$ouinonREPONSE
+                if [ "$reparationREPONSE" = "oui" ]
+                then
+                    reparation
+                else
+                    exit 1
+                fi
             else
                 exit 1
             fi
@@ -508,11 +528,16 @@ then
         if [ $? -ne 0 ]
         then
             echo "Il y a eu un problème de mise à jour."
-            ouinon "On tente une réparation ?" "oui"
-            reparationREPONSE=$ouinonREPONSE
-            if [ "$reparationREPONSE" = "oui" ]
+            if [ $ARCHIVES_POSSIBLES -ge 3 ]
             then
-                reparation
+                ouinon "On tente une réparation ?" "oui"
+                reparationREPONSE=$ouinonREPONSE
+                if [ "$reparationREPONSE" = "oui" ]
+                then
+                    reparation
+                else
+                    exit 1
+                fi
             else
                 exit 1
             fi
