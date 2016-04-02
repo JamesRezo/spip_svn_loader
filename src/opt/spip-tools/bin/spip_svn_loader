@@ -170,7 +170,7 @@ function reparation
         mkdir squelettes
     fi
 
-    echo "Sauvegarge des données (configuration, documents, plugins, ...)"
+    echo "Sauvegarde des données SPIP (configuration, documents, plugins, ...)"
     zip -q -r $fichier plugins config IMG -x config/ecran_securite.php config/remove.txt IMG/remove.txt && mv $fichier squelettes
     echo "Tentative de réparation ..."
     svn cleanup --remove-unversioned --include-externals -q && svn revert -R -q . && svn up -q
@@ -191,6 +191,10 @@ then
     exit 1
 else
     setSvnVersion
+    if [ `versionPlusGrandeOuEgale ${SVN_VERSION} 1.9.0` -ne 1 ]
+    then
+        echo "Vous devriez penser à mettre à jour votre client SVN ..."
+    fi
 fi
 
 SVN_SPIP_ROOT=svn://trac.rezo.net/spip
@@ -502,7 +506,7 @@ then
         #Comparer $_BRANCHE et $SVN_SPIP_BRANCHE_LOCALE
         if [ "^$_BRANCHE" = "$SVN_SPIP_BRANCHE_LOCALE" ]
         then
-            echo "C'est un peu bêbête, c'est la branche où vous vous trouvez ..."
+            echo "Basculer, c'est un peu bêbête, c'est la branche où vous vous trouvez ..."
             ouinon "On fait la bascule quand même ?" "non"
             if [ "$ouinonREPONSE" = "non" ]
             then
