@@ -317,6 +317,13 @@ then
     detacherREPONSE=non
 fi
 
+#Tester si le répertoire courant est un SPIP
+SPIP_VERSION_PHP=
+if [ -f ecrire/inc_version.php ]
+then
+    SPIP_VERSION_PHP=$(grep "spip_version_branche =" ecrire/inc_version.php | sed "s/.*\"\(.*\)\".*/\1/")
+fi
+
 #Tester si le répertoire courant est un SPIP sous SVN
 svninfo repos-root-url 2>/dev/null | grep -e "^${SVN_SPIP_ROOT}$" >/dev/null
 if [ $? -eq 1 ]
@@ -346,7 +353,7 @@ else
             SVN_SPIP_UPDATE=-1
         fi
     fi
-    echo "D'après le code, la version de SPIP est :"$(grep "spip_version_branche =" ecrire/inc_version.php | sed "s/.*\"\(.*\)\".*/\1/")
+    echo "D'après le code, la version de SPIP est :"$SPIP_VERSION_PHP
     echo "D'après SVN, la branche est :"$SVN_SPIP_BRANCHE_LOCALE
 fi
 
@@ -376,6 +383,7 @@ then
         fi
     fi
 
+    _DEFAULT=oui
     WC=`find . -maxdepth 1 -type d -name .svn -exec echo {} \;`
     if [ -z "$WC" ]; then
         #Warning si non vide
@@ -383,6 +391,11 @@ then
         if [ $VIDE -gt 0 ]
         then
             echo "ATTENTION! Ce répertoire n'est pas vide !"
+            if [ -n $SPIP_VERSION_PHP ]
+            then
+                echo "Et il semble qu'une instance de SPIP soit déjà présente ("$SPIP_VERSION_PHP")"
+                _DEFAULT=non
+            fi
         fi
         rep=.
         _chemin=`pwd`
@@ -398,7 +411,7 @@ then
 
     if [ -z $installerREPONSE ]
     then
-        ouinon "Installer SPIP dans $_chemin ?" "oui"
+        ouinon "Installer SPIP dans $_chemin ?" "$_DEFAULT"
         installerREPONSE=$ouinonREPONSE
     fi
     if [ "$installerREPONSE" = "oui" ]
