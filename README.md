@@ -57,6 +57,15 @@ apt-get upgrade spip-tools
 
 Selon la distribution debian, remplacer `trusty`, par `precise`, `wheezy` ou `jessie`
 
+Sur plate-forme [fedora](https://getfedora.org/) (ou RedHat, CentOS, ...), en tant que root, taper la commande :
+```bash
+dnf -y install http://james.at.rezo.net/svn_spip/rpms/spip-tools-1.0.0-1.fc23.noarch.rpm
+```
+ou
+```bash
+yum -y install http://james.at.rezo.net/svn_spip/rpms/spip-tools-1.0.0-1.fc23.noarch.rpm
+```
+
 ## Usage
 
 Dans le répertoire cible, taper `spip_svn_loader`.
