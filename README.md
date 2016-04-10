@@ -32,7 +32,7 @@ Lors du choix de version que proposera le script, avant de décider d'une versio
 
 Alternativement, ```git clone https://github.com/JamesRezo/spip_svn_loader.git``` et un lien symbolique ```ln -s `pwd`/spip_svn_loader/src/opt/spip-tools/bin/spip_svn_loader /usr/local/bin/spip_svn_loader``` marche aussi bien...
 
-Avec [Homebrew](http://brew.sh/) pour les utilisateurs de Mac OS X:
+### Avec [Homebrew](http://brew.sh/) pour les utilisateurs de Mac OS X:
 ```bash
 brew tap JamesRezo/spip
 brew install spip_svn_loader
@@ -42,14 +42,14 @@ ou bien pour mettre à jour:
 brew upgrade spip_svn_loader
 ```
 
-Sur plate-forme [debian](https://www.debian.org/), en tant que root, taper les commandes :
+### Sur plate-forme [debian](https://www.debian.org/), en tant que root, taper les commandes :
 ```bash
 echo "deb http://james.at.rezo.net/svn_spip/debs trusty main" > /etc/apt/sources.list.d/spip-tools.list
 wget -O - http://james.at.rezo.net/svn_spip/JamesRezo.gpg.key | apt-key add -
 apt-get update
 apt-get install spip-tools
 ```
-ou bien pour mettre à jour:
+ou bien, pour mettre à jour:
 ```bash
 apt-get update
 apt-get upgrade spip-tools
@@ -57,14 +57,19 @@ apt-get upgrade spip-tools
 
 Selon la distribution debian, remplacer `trusty`, par `precise`, `wheezy` ou `jessie`
 
-Sur plate-forme [fedora](https://getfedora.org/) (ou RedHat, CentOS, ...), en tant que root, taper la commande :
+### Sur plate-forme [fedora](https://getfedora.org/) (ou RedHat, CentOS, ...), en tant que root, taper les commandes :
 ```bash
-dnf -y install http://james.at.rezo.net/svn_spip/rpms/spip-tools-1.0.0-1.fc23.noarch.rpm
+rpm --import http://james.at.rezo.net/svn_spip/RPM-GPG-KEY-JamesRezo
+curl -o /etc/yum.repos.d/spip-tools.repo http://james.at.rezo.net/svn_spip/spip-tools.repo
+yum update spip-tools
+yum install spip-tools
 ```
-ou
+ou bien, pour mettre à jour:
 ```bash
-yum -y install http://james.at.rezo.net/svn_spip/rpms/spip-tools-1.0.0-1.fc23.noarch.rpm
+yum upgrade spip-tools
 ```
+
+Sur les distributions plus récentes, remplacer `yum` par [dnf](https://fedoraproject.org/wiki/Features/DNF)
 
 ## Usage
 

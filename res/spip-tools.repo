@@ -1,0 +1,6 @@
+[spip-tools]
+name=JamesRezo SPIP Tools
+baseurl=http://james.at.rezo.net/svn_spip/rpms/
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-JamesRezo
