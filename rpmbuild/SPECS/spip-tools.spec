@@ -10,7 +10,7 @@ URL:            https://github.com/JamesRezo/spip_svn_loader
 BuildArch:      noarch
 Source0:        spip-tools-1.0.0.tar.gz
 
-Requires:       bash subversion php-cli curl findutils
+Requires:       bash subversion php-cli php-xml curl findutils
 
 %description
 Installer et mettre a jour SPIP avec SVN
