@@ -204,6 +204,12 @@ function reparation
     fi
 }
 
+function doSvnRevision
+{
+    echo "Préparation du fichier svn.revision ..."
+    svn info $1 > svn.revision
+}
+
 #Vérifier que svn est installé ou dans le PATH
 svn --version --quiet >/dev/null 2>&1
 if [ $? -ne 0 ]
@@ -488,6 +494,10 @@ then
             else
                 exit 1
             fi
+        fi
+        if [ "$detacherREPONSE" = "oui" ]
+        then
+            doSvnRevision ${SVN_SPIP_ROOT}${_BRANCHE}
         fi
         echo "OK."
         exit 0
