@@ -145,16 +145,16 @@ function setSvnVersion
 function svninfo
 {
     if [ `versionPlusGrandeOuEgale ${SVN_VERSION} 1.9.0` -eq 1 ]; then
-        svn info --show-item=$1
+        svn info --show-item=$1 $2
     else
         if [ "$1" = "repos-root-url" ]; then
-            svn info | grep -e "^Repository Root: " | cut -d" " -f3
+            svn info $2 | grep -e "^Repository Root: " | cut -d" " -f3
         elif [ "$1" = "relative-url" ]; then
-            svn info | grep -e "^Relative URL: " | cut -d" " -f3
+            svn info $2 | grep -e "^Relative URL: " | cut -d" " -f3
         elif [ "$1" = "last-changed-date" ]; then
-            svn info | grep -e "^Last Changed Date: " | cut -d" " -f4,5
+            svn info $2 | grep -e "^Last Changed Date: " | cut -d" " -f4,5
         elif [ "$1" = "wc-root" ]; then
-            svn info | grep -e "^Working Copy Root Path: " | cut -d" " -f5
+            svn info $2 | grep -e "^Working Copy Root Path: " | cut -d" " -f5
         fi
     fi
 }
@@ -208,6 +208,8 @@ function doSvnRevision
 {
     echo "Préparation du fichier svn.revision ..."
     svn info $1 > svn.revision
+    local _REMOTE=`svninfo last-changed-date $1 | sed 's/\(.*\)\.[0-9]*Z/\1/' | tr -d 'T:-' | sed 's/\(.*\)\(..\)$/\1.\2/'`
+    touch -t $_REMOTE svn.revision
 }
 
 #Vérifier que svn est installé ou dans le PATH
