@@ -155,6 +155,8 @@ function svninfo
             svn info $2 | grep -e "^Last Changed Date: " | cut -d" " -f4,5
         elif [ "$1" = "wc-root" ]; then
             svn info $2 | grep -e "^Working Copy Root Path: " | cut -d" " -f5
+        elif [ "$1" = "last-changed-revision" ]; then
+            svn info $2 | grep -e "^Last Changed Rev: " | cut -d" " -f4
         fi
     fi
 }
