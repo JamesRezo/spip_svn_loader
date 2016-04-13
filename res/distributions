@@ -1,0 +1,36 @@
+Origin: james.at.rezo.net/svn_spip/debs
+Label: apt repository
+Codename: jessie
+Architectures: amd64 source
+Components: main
+Description: SPIP Repository
+SignWith: yes
+Pull: jessie
+
+Origin: james.at.rezo.net/svn_spip/debs
+Label: apt repository
+Codename: wheezy
+Architectures: amd64 source
+Components: main
+Description: SPIP Repository
+SignWith: yes
+Pull: wheezy
+
+Origin: james.at.rezo.net/svn_spip/debs
+Label: apt repository
+Codename: trusty
+Architectures: amd64 source
+Components: main
+Description: SPIP Repository
+SignWith: yes
+Pull: trusty
+
+Origin: james.at.rezo.net/svn_spip/debs
+Label: apt repository
+Codename: precise
+Architectures: amd64 source
+Components: main
+Description: SPIP Repository
+SignWith: yes
+Pull: precise
+
