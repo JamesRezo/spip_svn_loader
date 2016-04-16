@@ -209,7 +209,7 @@ function reparation
 function doSvnRevision
 {
     echo "Préparation du fichier svn.revision ..."
-    svn info $1 > svn.revision
+    svn info $1 | grep -v "Working Copy Root Path" > svn.revision
     local _REMOTE=`svninfo last-changed-date $1 | sed 's/\(.*\)\.[0-9]*Z/\1/' | tr -d 'T:-' | sed 's/\(.*\)\(..\)$/\1.\2/'`
     touch -t $_REMOTE svn.revision
 }
