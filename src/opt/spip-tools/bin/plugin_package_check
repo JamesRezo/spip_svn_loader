@@ -1,0 +1,194 @@
+#!/bin/bash
+
+source ./semver
+
+ZONE=svn://zone.spip.org/spip-zone/_plugins_/
+NE_PAS_TRAITER="_squelettes_\n_ze_laboratoire_"
+VALID_BRANCH="^v?"$VALID_IDENTIFIER"(\."$VALID_IDENTIFIER"(\."$VALID_IDENTIFIER")?)?$"
+_DO_BASH_CMD=
+
+function svn2http
+{
+    local url=$1
+    echo $url | sed 's/^svn:\/\/zone\.spip\.org\/spip-zone/http:\/\/zone.spip.org\/trac\/spip-zone\/browser/'
+}
+
+function checkPlugin
+{
+    local plugin=${1%/}"/"
+    hasFiles=0
+    hasStdLayout=0
+    hasTrunk=0
+    hasBranches=0
+    hasTags=0
+    ARBO=`svn ls ${ZONE}${plugin}`
+    if [ $? -eq 1 ]
+    then
+        echo "$plugin n'existe pas !"
+        exit 1
+    fi
+    if [ $(echo $ARBO | egrep -v "(trunk|branches|tags)" | wc -l) -ne 0 ]
+    then
+        hasFiles=1            
+    fi
+    if [ $(echo $ARBO | egrep "(trunk|branches|tags)" | wc -l) -ne 0 ]
+    then
+        hasStdLayout=1
+        hasTrunk=$([[ `svn ls ${ZONE}${plugin}trunk 2>/dev/null | wc -l` -gt 0 ]] && echo 1 || echo 0)
+        hasBranches=$([[ `svn ls ${ZONE}${plugin}branches 2>/dev/null | wc -l` -gt 0 ]] && echo 1 || echo 0)
+        hasTags=$([[ `svn ls ${ZONE}${plugin}tags 2>/dev/null | wc -l` -gt 0 ]] && echo 1 || echo 0)
+    fi
+
+    nomPlugin=${plugin%/}
+    echo
+    echo "## Plugin [$nomPlugin]("$(svn2http ${ZONE}${plugin})")"
+    if [ $hasFiles -eq 1 ]
+    then
+        echo " * Il y a des fichiers présents à la racine de \`"${ZONE}$plugin"\`"
+    fi
+    if [ $hasStdLayout -eq 0 ]
+    then
+        echo " * Il n'y a pas de *standard layout* à la racine de \`"${ZONE}$plugin"\`"
+        if [ $hasFiles -eq 1 ]
+        then
+            echo " * Suggestion : [création du trunk de ce plugin](#résumé-des-lignes-de-commandes)"
+            _DO_BASH_CMD=$(cat <<BASHCMD
+$_DO_BASH_CMD
+
+svn mv ${ZONE}$plugin ${ZONE}${nomPlugin}_trunk -m "Création trunk de '${nomPlugin}'. Étape 1."
+svn mkdir ${ZONE}$plugin -m "Création trunk de '${nomPlugin}'. Étape 2."
+svn mv ${ZONE}${nomPlugin}_trunk ${ZONE}${plugin}trunk -m "Création trunk de '${nomPlugin}'. Étape 3."
+BASHCMD
+)
+            echo " * Astuce : dans le répertoire local où le plugin est développé:"
+            echo "\`\`\`bash"
+            echo "svn switch --ignore-ancestry ^/_plugins_/${plugin}trunk"
+            echo "\`\`\`"
+        fi
+    else
+        echo "### Packaging possible."
+        if [ $hasTrunk -eq 1 ]
+        then
+            echo
+            echo "1. pour la version de dev."
+        else
+            echo " * Suggestion : [création du trunk de ce plugin](#résumé-des-lignes-de-commandes)"
+            _DO_BASH_CMD=$(cat <<BASHCMD
+$_DO_BASH_CMD
+
+#TODO : partir de la branche la plus grande ou du tag le plus grand
+#svn cp <plusGrandeBranche ${ZONE}${plugin}> ${ZONE}${plugin}trunk -m "Création trunk de '${nomPlugin}'."
+#svn cp <plusGrandTag ${ZONE}${plugin}> ${ZONE}${plugin}trunk -m "Création trunk de '${nomPlugin}'."
+#Exemple: svn cp ${ZONE}monplugin/branches/4.5 ${ZONE}monplugin/trunk -m "Création trunk de 'monplugin'."
+BASHCMD
+)
+        fi
+        if [ $hasBranches  -eq 1 ]
+        then
+            echo
+            echo "2. pour les branches de maintenance."
+            possible=0
+            for branche in `svn ls ${ZONE}${plugin}branches`
+            do
+                possible=1
+                if [ `svn info --show-item=kind ${ZONE}${plugin}branches/$branche` = "dir" ]
+                then
+                    branche=$(echo $branche | sed 's/\/$//')
+                    if [ $(validBranch $branche) -eq 0 ]
+                    then
+                        proposition=$(proposeBranche $branche)
+                        if [ "$proposition" != "" ]
+                        then
+                            echo " * Suggestion : [renommer la branche '"$branche"' en '"$proposition"'](#résumé-des-lignes-de-commandes)"
+                            _DO_BASH_CMD=$(cat <<BASHCMD
+$_DO_BASH_CMD
+
+svn mv ${ZONE}${plugin}branches/$branche ${ZONE}${plugin}branches/$proposition -m "Conformité SemVer"
+BASHCMD
+)
+                        fi
+                    else
+                        echo " * "$branche
+                    fi
+                else
+                    echo " * ERREUR: le fichier '"${ZONE}${plugin}branches/$branche"' n'a rien à faire ici"
+                fi
+            done
+            if [ $possible -eq 0 ]
+            then
+                echo " * Quand il y en aura !"
+            fi
+        fi
+        if [ $hasTags -eq 1 ]
+        then
+            echo
+            echo "3. pour les releases."
+            possible=0
+            for tag in `svn ls ${ZONE}${plugin}tags`
+            do
+                possible=1
+                if [ `svn info --show-item=kind ${ZONE}${plugin}tags/$tag` = "dir" ]
+                then
+                    tag=$(echo $tag | sed 's/\/$//')
+                    if [ $(validTag $tag) -eq 0 ]
+                    then
+                        proposition=$(proposeTag $tag)
+                        if [ "$proposition" != "" ]
+                        then
+                            echo " * Suggestion : [renommer le tag '"$tag"' en '"$proposition"'](#résumé-des-lignes-de-commandes)"
+                            _DO_BASH_CMD=$(cat <<BASHCMD
+$_DO_BASH_CMD
+
+svn mv ${ZONE}${plugin}tags/$tag ${ZONE}${plugin}tags/$proposition -m "Conformité SemVer"
+BASHCMD
+)
+                        fi
+                    else
+                        echo " * "$tag
+                    fi
+                else
+                    echo " * ERREUR: le fichier '"${ZONE}${plugin}tags/$tag"' n'a rien à faire ici"
+                fi
+            done
+            if [ $possible -eq 0 ]
+            then
+                echo " * Quand il y en aura !"
+            fi
+
+        fi
+    fi
+}
+
+function doBashCmd
+{
+    echo "## Résumé des lignes de commandes:"
+    echo "\`\`\`bash"
+    echo "$_DO_BASH_CMD"
+    echo "\`\`\`"
+}
+
+echo "# Conformité SemVer"
+
+if [ "$1" != "" ]
+then
+    while [[ "$1" != "" ]]; do
+        if [ $(printf $NE_PAS_TRAITER | egrep "^${1%/}$" | wc -l) -eq 0 ]
+        then
+            checkPlugin $1
+        else
+            echo "Non. pas le répertoire '$1'."
+        fi
+        shift
+    done
+else
+    for plugin in `svn ls $ZONE`
+    do
+        if [ $(printf $NE_PAS_TRAITER | egrep "^${1%/}$" | wc -l) -eq 0 ]
+        then
+            checkPlugin $plugin
+        fi
+    done
+fi
+
+doBashCmd
+

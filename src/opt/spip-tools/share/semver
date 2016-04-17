@@ -1,0 +1,106 @@
+#!/bin/bash
+
+VALID_IDENTIFIER="(0|[1-9]\d*)"
+VALID_PRERELEASE="(alpha|beta|RC)\d*"
+VALID_METADATA="[0-9A-Za-z-]+"
+VALID_BRANCH="^v?"$VALID_IDENTIFIER"(\."$VALID_IDENTIFIER")?$"
+VALID_TAG="^v?"$VALID_IDENTIFIER"\."$VALID_IDENTIFIER"\."$VALID_IDENTIFIER"(-"$VALID_PRERELEASE")?(\+"$VALID_METADATA")?$"
+
+function validBranch
+{
+    echo $1 | egrep $VALID_BRANCH | wc -l
+}
+
+function validTag
+{
+    echo $1 | egrep $VALID_TAG | wc -l
+}
+
+function nbIdentifiers
+{
+    expr 1 + `echo $1 | grep -o -e "\." | wc -l`
+}
+
+function noLeadingZeros
+{
+    local nozeros=$(echo $1 | sed 's/^0*//')
+    [[ "$nozeros" = "" ]] && echo "0" || echo $nozeros
+}
+
+function proposeBase
+{
+    local proposition=$1
+    local nbIds=${2:-3}
+    #Remplacer tout caractère de soulignement (_) par un point (.)
+    proposition=$(echo $proposition | tr "_" ".")
+    #Remplacer tout tiret (-) par un point (.)
+    proposition=$(echo $proposition | tr "-" ".")
+    #Supprimer tout caractère non-numérique en début de chaine
+    proposition=$(echo $proposition | sed 's/^[^0-9]*\(.*\)/\1/')
+    #Supprimer tout caractère non-numérique ou point en fin de chaine
+    proposition=$(echo $proposition | sed 's/^\([\.0-9]*\).*/\1/')
+    #Eliminer les doublons de points
+    proposition=$(echo $proposition | tr -s '[:punct:]')
+    #Eliminer un éventuel point final
+    proposition=$(echo $proposition | sed 's/\(.*\)\.$/\1/')
+    #Garder le nombre d'identifiants souhaité
+    proposition=$(echo $proposition | cut -d. -f1-$nbIds)
+    #Ajouter les identifiants manquants
+    while [ $(nbIdentifiers $proposition) -lt $nbIds ]
+    do
+        proposition=$proposition".0"
+    done
+    #Supprimer les zéros à gauche
+    digits=$(echo $proposition | tr '.' "\n")
+    proposition=
+    for i in $digits
+    do
+        proposition=$proposition$(noLeadingZeros $i)"."
+    done
+    #Eliminer le point final
+    proposition=$(echo $proposition | sed 's/\(.*\)\.$/\1/')
+    echo $proposition    
+}
+
+function proposeBranche
+{
+    local nbIds=2
+    local proposition=$1
+    proposition=$(proposeBase $proposition $nbIds)
+   if [ $(validBranch $proposition) -eq 0 ]
+    then
+        proposition=
+    fi
+    echo $proposition
+}
+
+function extractComplement
+{
+    local proposition=$1
+    local complement=$(echo $proposition | rev | cut -d"-" -f1 | rev)
+    # >&2 echo -n " DEBUG (compl.) "$complement
+    # [[ "$complement" =~ "^[0-9]+$" ]] && echo "" || echo "-"$complement
+    [[ $(validTag $complement) -eq 1 ]] && echo "" || echo "-"$complement
+}
+
+function proposeTag
+{
+    local proposition=$1
+    local metaData=
+    local preRelease=
+    [[ $proposition =~ "+" ]] && \
+        metaData="+"$(echo $proposition | cut -d"+" -f2) && \
+        proposition=$(echo $proposition | sed 's/\(.*\)'$metaData'$/\1/')
+    [[ $proposition =~ "-" ]] && \
+        preRelease="-"$(echo $proposition | cut -d"-" -f2) && \
+        proposition=$(echo $proposition | sed 's/\(.*\)'$preRelease'$/\1/')
+    # >&2 echo -n " DEBUG (proposition:"$proposition") (preRelease:"$preRelease") (metaData:"$metaData")"
+    proposition=$(proposeBase $proposition)
+
+    proposition=$proposition$preRelease$metaData
+    if [ $(validTag $proposition) -eq 0 ]
+    then
+        proposition=
+    fi
+    echo $proposition
+}
