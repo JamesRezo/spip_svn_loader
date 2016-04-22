@@ -1,0 +1,27 @@
+#!/bin/bash
+
+if [ "$1" = "--prefix" ]; then
+    dirname $0 | sed 's/\(.*\)\/bin$/\1/'
+fi
+
+if [ "$1" = "--env" ]; then
+    source ~/Sites/spip-dev/packaging/spip-tools/src/opt/spip-tools/share/spip_communs
+    source ~/Sites/spip-dev/spip-zone/semver
+    #TODO -f /etc/spip-tools.conf
+    #TODO -d /etc/spip-tools.d/*.conf
+    #TODO -f ~/.spip/spip-tools.conf
+    env | grep -e "^SPIP"
+    env | grep -e "^SVN_SPIP"
+fi
+
+if [ "$1" = "--conf" ]; then
+    cat /etc/spip-tools.conf
+fi
+
+if [ "$1" = "--help" ]; then
+    echo "TODO"
+fi
+
+if [ "$1" = "--version" ]; then
+    echo "TODO"
+fi
