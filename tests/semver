@@ -1,0 +1,137 @@
+#!/bin/bash
+
+source $(spip_tools --prefix)/share/semver
+
+dataBranchTest=$(
+    printf "1-beta\n1.0\n"
+    printf "0.9\n0.9\n"
+    printf "v_10.0\n10.0\n"
+    printf "v10.0\nv10.0\n"
+    printf "10.245\n10.245\n"
+    printf "1.2.3.4\n1.2\n"
+    printf "2_0\n2.0\n"
+    printf "1_9_2\n1.9\n"
+    printf "v0\nv0\n"
+    printf "v_1\n1.0\n"
+    printf "1\n1\n"
+    printf "1.0\n1.0\n"
+    printf "2.1.29\n2.1\n"
+    printf "3.0.0-alpha1\n3.0\n"
+    printf "plugin-1.0.0\n1.0\n"
+    printf "spip-2.1\n2.1\n"
+    printf "un_mot\n-\n"
+    printf "testdenomdebranche\n-\n"
+    printf "montruc_1\n1.0\n"
+    printf "montruc_1_2\n1.2\n"
+    printf "montruc_1_2_3\n1.2\n"
+    printf "1.0.0-RC\n1.0\n"
+    printf "v_1test\n1.0\n"
+    printf "v1alpha2\n1.0\n"
+    printf "v1.0.0-beta6\n1.0\n"
+    printf "1.0-RC2\n1.0\n"
+    printf "1.8.3b\n1.8\n"
+    printf "Menuder-2.X\n2.0\n"
+    printf "Menuder-2.2.X\n2.2\n"
+    printf "Menuder-2.3.1\n2.3\n"
+    printf "plugin-3.0.1-RC7\n3.0\n"
+    printf "V01_10_00.001\n1.10\n"
+    printf "plugin.1-2\n1.2\n"
+    printf "1.-2\n1.2\n"
+    printf "0000\n0.0\n"
+    printf "1.0.0-alpha1+rev15037\n1.0\n"
+    printf "1.0.0+rev15037\n1.0"
+)
+
+dataTagTest=$(
+    printf "1-beta\n1.0.0-beta\n"
+    printf "0.9\n0.9.0\n"
+    printf "v_10.0\n10.0.0\n"
+    printf "v10.0\n10.0.0\n"
+    printf "10.245\n10.245.0\n"
+    printf "1.2.3.4\n1.2.3\n"
+    printf "2_0\n2.0.0\n"
+    printf "1_9_2\n1.9.2\n"
+    printf "v0\n0.0.0\n"
+    printf "v_1\n1.0.0\n"
+    printf "1\n1.0.0\n"
+    printf "1.0\n1.0.0\n"
+    printf "2.1.29\n2.1.29\n"
+    printf "3.0.0-alpha1\n3.0.0-alpha1\n"
+    printf "plugin-1.0.0\n1.0.0\n"
+    printf "un_mot\n-\n"
+    printf "testdenomdebranche\n-\n"
+    printf "montruc_1\n1.0.0\n"
+    printf "montruc_1_2\n1.2.0\n"
+    printf "montruc_1_2_3\n1.2.3\n"
+    printf "1.0.0-RC\n1.0.0-RC\n"
+    printf "v_1test\n1.0.0\n"
+    printf "v1alpha2\n1.0.0\n"
+    printf "v1.0.0-beta6\nv1.0.0-beta6\n"
+    printf "1.0-RC2\n1.0.0-RC2\n"
+    printf "1.8.3b\n1.8.3\n"
+    printf "Menuder-2.X\n2.0.0\n"
+    printf "Menuder-2.2.X\n2.2.0\n"
+    printf "Menuder-2.3.1\n2.3.1\n"
+    printf "plugin-3.0.1-RC7\n3.0.1-RC7\n"
+    printf "V01_10_00.001\n1.10.0\n"
+    printf "plugin.1-2\n-\n"
+    printf "1.-2\n-\n"
+    printf "0000\n0.0.0\n"
+    printf "1.0.0-alpha1+rev15037\n1.0.0-alpha1+rev15037\n"
+    printf "1.0.0+rev15037\n1.0.0+rev15037"
+)
+
+function testBranchTest
+{
+    while [ $# -ne 0 ]; do
+        local version=$1
+        local expected=$2
+        local _test=
+        if [ $(validBranch $version) -eq 0 ]; then
+            _test=$(proposeBranche $version)
+        else
+            _test=$version
+        fi
+        if [ "$expected" = "-" ]; then
+            expected=
+        fi
+        local result=$([[ "$_test" = "$expected" ]] && echo '.' || echo 'F')
+        echo -n $result
+        if [ "$result" = "F" ]; then
+            echo -n "(tested:'"$version"', actual:'"$_test"', expected:'"$expected"')"
+        fi
+        shift
+        shift
+    done
+    echo
+}
+
+function testTagTest
+{
+    while [ $# -ne 0 ]; do
+        local version=$1
+        local expected=$2
+        local _test=
+        if [ $(validTag $version) -eq 0 ]; then
+            _test=$(proposeTag $version)
+        else
+            _test=$version
+        fi
+        if [ "$expected" = "-" ]; then
+            expected=
+        fi
+        local result=$([[ "$_test" = "$expected" ]] && echo '.' || echo 'F')
+        echo -n $result
+        if [ "$result" = "F" ]; then
+            echo -n "(tested:'"$version"', actual:'"$_test"', expected:'"$expected"')"
+        fi
+        shift
+        shift
+    done
+    echo
+}
+
+testBranchTest $dataBranchTest
+echo
+testTagTest $dataTagTest
+echo

@@ -54,26 +54,29 @@ function proposeBase
     #Eliminer un éventuel point final
     proposition=$(echo $proposition | sed 's/\(.*\)\.$/\1/')
     # >&2 echo -n " DEBUG "$proposition
-    #Garder le nombre d'identifiants souhaité
-    proposition=$(echo $proposition | cut -d. -f1-$nbIds)
-    # >&2 echo -n " DEBUG "$proposition
-    #Ajouter les identifiants manquants
-    while [ $(nbIdentifiers $proposition) -lt $nbIds ]
-    do
-        proposition=$proposition".0"
-    done
-    # >&2 echo -n " DEBUG "$proposition
-    #Supprimer les zéros à gauche
-    digits=$(echo $proposition | tr '.' "\n")
-    proposition=
-    for i in $digits
-    do
-        proposition=$proposition$(noLeadingZeros $i)"."
-    done
-    # >&2 echo -n " DEBUG "$proposition
-    #Eliminer le point final
-    proposition=$(echo $proposition | sed 's/\(.*\)\.$/\1/')
-    # >&2 echo -n " DEBUG "$proposition
+    # Si la proposition est vide à ce stabe, pas la peine de continuer
+    if [ "$proposition" != "" ]; then
+        #Garder le nombre d'identifiants souhaité
+        proposition=$(echo $proposition | cut -d. -f1-$nbIds)
+        # >&2 echo -n " DEBUG "$proposition
+        #Ajouter les identifiants manquants
+        while [ $(nbIdentifiers $proposition) -lt $nbIds ]
+        do
+            proposition=$proposition".0"
+        done
+        # >&2 echo -n " DEBUG "$proposition
+        #Supprimer les zéros à gauche
+        digits=$(echo $proposition | tr '.' "\n")
+        proposition=
+        for i in $digits
+        do
+            proposition=$proposition$(noLeadingZeros $i)"."
+        done
+        # >&2 echo -n " DEBUG "$proposition
+        #Eliminer le point final
+        proposition=$(echo $proposition | sed 's/\(.*\)\.$/\1/')
+        # >&2 echo -n " DEBUG "$proposition
+    fi
     echo $proposition    
 }
 
@@ -82,7 +85,7 @@ function proposeBranche
     local nbIds=2
     local proposition=$1
     proposition=$(proposeBase $proposition $nbIds)
-   if [ $(validBranch $proposition) -eq 0 ]
+    if [ $(validBranch $proposition) -eq 0 ]
     then
         proposition=
     fi
@@ -90,20 +93,12 @@ function proposeBranche
     echo $proposition
 }
 
-function extractComplement
-{
-    local proposition=$1
-    local complement=$(echo $proposition | rev | cut -d"-" -f1 | rev)
-    # >&2 echo -n " DEBUG (compl.) "$complement
-    # [[ "$complement" =~ "^[0-9]+$" ]] && echo "" || echo "-"$complement
-    [[ $(validTag $complement) -eq 1 ]] && echo "" || echo "-"$complement
-}
-
 function proposeTag
 {
     local proposition=$1
     local metaData=
     local preRelease=
+    proposition=$(echo $proposition | sed 's/^[^0-9\.]*-//')
     [[ $proposition =~ "+" ]] && \
         metaData="+"$(echo $proposition | cut -d"+" -f2) && \
         proposition=$(echo $proposition | sed 's/\(.*\)'$metaData'$/\1/')
