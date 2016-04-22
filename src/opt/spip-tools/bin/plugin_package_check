@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source ./semver
+source $(spip_tools --prefix)/share/semver
 
 ZONE=svn://zone.spip.org/spip-zone/_plugins_/
 NE_PAS_TRAITER="_squelettes_\n_ze_laboratoire_"
@@ -62,7 +62,7 @@ BASHCMD
 )
             echo " * Astuce : dans le répertoire local où le plugin est développé:"
             echo "\`\`\`bash"
-            echo "svn switch --ignore-ancestry ^/_plugins_/${plugin}trunk"
+            echo " svn switch --ignore-ancestry ^/_plugins_/${plugin}trunk"
             echo "\`\`\`"
         fi
     else
