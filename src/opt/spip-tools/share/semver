@@ -4,7 +4,9 @@ VALID_IDENTIFIER="(0|[1-9]\d*)"
 VALID_PRERELEASE="(alpha|beta|RC)\d*"
 VALID_METADATA="[0-9A-Za-z-]+"
 VALID_BRANCH="^v?"$VALID_IDENTIFIER"(\."$VALID_IDENTIFIER")?$"
+TRANSFORM_BRANCHES="0.0\n0.1"
 VALID_TAG="^v?"$VALID_IDENTIFIER"\."$VALID_IDENTIFIER"\."$VALID_IDENTIFIER"(-"$VALID_PRERELEASE")?(\+"$VALID_METADATA")?$"
+TRANSFORM_TAGS="0.0.0\n0.1.0"
 
 function validBranch
 {
@@ -31,25 +33,36 @@ function proposeBase
 {
     local proposition=$1
     local nbIds=${2:-3}
+    #Special SPIP
+    proposition=$(echo $proposition | sed 's/^spip-//')
+    # >&2 echo -n " DEBUG "$proposition
     #Remplacer tout caractère de soulignement (_) par un point (.)
     proposition=$(echo $proposition | tr "_" ".")
+    # >&2 echo -n " DEBUG "$proposition
     #Remplacer tout tiret (-) par un point (.)
     proposition=$(echo $proposition | tr "-" ".")
+    # >&2 echo -n " DEBUG "$proposition
     #Supprimer tout caractère non-numérique en début de chaine
     proposition=$(echo $proposition | sed 's/^[^0-9]*\(.*\)/\1/')
+    # >&2 echo -n " DEBUG "$proposition
     #Supprimer tout caractère non-numérique ou point en fin de chaine
     proposition=$(echo $proposition | sed 's/^\([\.0-9]*\).*/\1/')
+    # >&2 echo -n " DEBUG "$proposition
     #Eliminer les doublons de points
     proposition=$(echo $proposition | tr -s '[:punct:]')
+    # >&2 echo -n " DEBUG "$proposition
     #Eliminer un éventuel point final
     proposition=$(echo $proposition | sed 's/\(.*\)\.$/\1/')
+    # >&2 echo -n " DEBUG "$proposition
     #Garder le nombre d'identifiants souhaité
     proposition=$(echo $proposition | cut -d. -f1-$nbIds)
+    # >&2 echo -n " DEBUG "$proposition
     #Ajouter les identifiants manquants
     while [ $(nbIdentifiers $proposition) -lt $nbIds ]
     do
         proposition=$proposition".0"
     done
+    # >&2 echo -n " DEBUG "$proposition
     #Supprimer les zéros à gauche
     digits=$(echo $proposition | tr '.' "\n")
     proposition=
@@ -57,8 +70,10 @@ function proposeBase
     do
         proposition=$proposition$(noLeadingZeros $i)"."
     done
+    # >&2 echo -n " DEBUG "$proposition
     #Eliminer le point final
     proposition=$(echo $proposition | sed 's/\(.*\)\.$/\1/')
+    # >&2 echo -n " DEBUG "$proposition
     echo $proposition    
 }
 
@@ -71,6 +86,7 @@ function proposeBranche
     then
         proposition=
     fi
+    #TODO utiliser TRANSFORM_BRANCHES (Même si, 0.0->0.1, c'est plutôt signe qu'il n'y a pas encore besoin de branche)
     echo $proposition
 }
 
@@ -102,5 +118,6 @@ function proposeTag
     then
         proposition=
     fi
+    #TODO utiliser TRANSFORM_BRANCHES (Même si, 0.0.0->0.1.0, c'est plutôt signe qu'il n'y a pas besoin de faire une release)
     echo $proposition
 }
