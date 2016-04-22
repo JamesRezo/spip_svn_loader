@@ -1,0 +1,156 @@
+#!/bin/bash
+
+source $(spip_tools --prefix)/share/semver
+
+CORE=svn://zone.spip.org/spip-zone/_core_/
+ZONE=svn://zone.spip.org/spip-zone/_plugins_/
+
+CORE_BRANCHES=$(printf "%s\n" `svn ls ${CORE}branches | sed 's/spip-\(.*\)\/$/\1/' | sort -t '.' -k 1,1 -k 2,2 -n`)
+EXTERNALS_TRUNK=
+EXTERNALS_BRANCHE_2_1=
+EXTERNALS_BRANCHE_3_0=
+EXTERNALS_BRANCHE_3_1=
+
+#Liste des plugins core qui vont être déplacés
+PLUGINS=
+
+function prepareExternals
+{
+    local ORIGIN=$(echo "$1" | sed 's/\//\\\//g')
+    local DEST=$(echo "$2" | sed 's/\//\\\//g')
+    echo "s/^${ORIGIN} \(.*\)/${DEST} \1/"
+}
+
+function prepareExternals21_30
+{
+    local ORIGIN=$(echo "$1" | sed 's/\//\\\//g')
+    local DEST=$(echo "$2" | sed 's/\//\\\//g')
+    echo "s/\(.*\) ${ORIGIN}$/\1 ${DEST}/"    
+}
+
+function pluginCoreMove
+{
+    _MOVE=0
+    local plugin=${1%/}"/"
+    local nomPlugin=${plugin%/}
+    local coreBranche=
+    local pluginVersion=
+    local paquetVersion=
+    local pluginSemver=
+    local paquetSemver=
+    local _versions=
+    local coreExist=$(svn ls ${CORE}plugins/$plugin 2>/dev/null | wc -l)
+    local zoneExist=$(svn ls ${ZONE}${plugin} 2>/dev/null | wc -l)
+    if [ $coreExist -gt 0 ]; then
+        if [ $zoneExist -eq 0 ]; then
+            _MOVE=1
+
+            #trunk
+            echo "# Déplacement du plugin '${nomPlugin}'"
+            echo "svn mkdir ${ZONE}${plugin} ${ZONE}${plugin}branches ${ZONE}${plugin}tags -m \"Déplacement du plugin '${nomPlugin}'. Étape 1.\""
+            echo "svn mv ${CORE}plugins/$plugin ${ZONE}${plugin}trunk -m \"Déplacement du plugin '${nomPlugin}'. Création trunk. Étape 2.\""
+            EXTERNALS_TRUNK=$EXTERNALS_TRUNK"@"$(prepareExternals ${CORE}plugins/$nomPlugin ${ZONE}${plugin}trunk)
+ 
+            #branches
+            for branche in $CORE_BRANCHES; do
+                coreBranche="spip-"${branche%/}
+                exist=$(svn ls ${CORE}branches/$coreBranche/plugins/$plugin 2>/dev/null | wc -l)
+                if [ $exist -gt 0 ]; then
+                    # Eplucher plugin.xml|paquet.xml pour récupérer la version indiquée dans le fichier et créer la branche
+                    # Pour la branche 2.1
+                    pluginVersion=$(svn cat ${CORE}branches/$coreBranche/plugins/$plugin/plugin.xml 2>/dev/null | grep "<version>" | sed "s/.*>\(.*\)<.*/\1/")
+                    pluginSemver=$(proposeBranche $pluginVersion)
+                    if [ "$pluginSemver" != "" ]; then
+                        _versions=$coreBranche":"$pluginSemver" "$_versions
+                        EXTERNALS_BRANCHE_2_1=$EXTERNALS_BRANCHE_2_1"@"$(prepareExternals21_30 ${CORE}branches/$coreBranche/plugins/$nomPlugin ${ZONE}${plugin}branches/$pluginSemver)
+                    fi
+
+                    # Pour les branches 3.0 et 3.1
+                    paquetVersion=$(svn cat ${CORE}branches/$coreBranche/plugins/$plugin/paquet.xml 2>/dev/null | grep version | sed "s/.*\"\(.*\)\".*/\1/")
+                    paquetSemver=$(proposeBranche $paquetVersion)
+                    if [ "$paquetSemver" != "" ]; then
+                        _versions=$coreBranche":"$paquetSemver" "$_versions
+                        if [ "$coreBranche" = "spip-3.1" ]; then
+                            EXTERNALS_BRANCHE_3_1=$EXTERNALS_BRANCHE_3_1"@"$(prepareExternals ${CORE}branches/spip-3.1/plugins/$nomPlugin ${ZONE}${plugin}branches/$paquetSemver)
+                        else
+                            EXTERNALS_BRANCHE_3_0=$EXTERNALS_BRANCHE_3_0"@"$(prepareExternals21_30 ${CORE}branches/spip-3.0/plugins/$nomPlugin ${ZONE}${plugin}branches/$paquetSemver)
+                        fi
+                    fi
+               fi
+            done
+
+            if [ "$_versions" != "" ]; then
+                local lastsemver=
+                echo
+                for core2semver in $_versions; do
+                    local core=$(echo $core2semver | cut -d: -f1)
+                    local semver=$(echo $core2semver | cut -d: -f2)
+                    #TODO Et donc, contrôler quand on a plusieurs fois la même branche proposée (dans 3.0 et 3.1)
+                    #     Et si si oui, privilégier la branche spip-3.1 pour le `svn mv`
+                    if [ "$lastsemver" != "$semver" ]; then
+                        echo -n "svn mv ${CORE}branches/$core/plugins/$plugin ${ZONE}${plugin}branches/$semver"
+                        echo " -m \"Déplacement du plugin '${nomPlugin}'. Branche ${semver}. Étape 3.\""
+                        lastsemver=$semver
+                    fi
+                done
+            fi
+            echo
+        else
+            >&2 echo "ATTENTION ! Le plugin '${nomPlugin}' existe déjà dans le répertoire _plugins_ de la zone ! Déplacement impossible."
+        fi
+    else
+        >&2 echo "ATTENTION ! Le plugin '${nomPlugin}' n'existe pas dans le répertoire _core_/plugins de la zone ! Déplacement impossible."
+    fi
+}
+
+function pluginExternalUpdate
+{
+    local externals=$(echo $1 | tr "§" " " | sed 's/^@\(.*\)/\1/')
+    local spipBranch=$2
+    local kindBranch=$(echo $3 | tr "§" " ")
+
+    echo "# Modifier les svn:externals de la $kindBranch de SPIP pour le(s) plugin(s)"$PLUGINS
+    svn propget svn:externals $spipBranch > svn_externals
+    OLDIFS=$IFS
+    IFS="@"
+    for external in $externals; do
+        sed "$external" svn_externals > svn_externals_modified
+        mv svn_externals_modified svn_externals
+    done
+    IFS=$OLDIFS
+    echo "svn propedit -m \"Mise à jour svn:externals du(es) plugin(s)$PLUGINS.\" --editor-cmd 'echo \"`cat svn_externals`\" >' svn:externals $spipBranch"
+    echo
+    rm svn_externals
+}
+
+if [ "$1" != "" ]
+then
+    while [[ "$1" != "" ]]; do
+        pluginCoreMove $1
+        [[ $_MOVE -eq 1 ]] && PLUGINS=$PLUGINS" "${1%/}
+        shift
+    done
+else
+    for plugin in `svn ls $CORE/plugins`; do
+        pluginCoreMove $plugin
+        [[ $_MOVE -eq 1 ]] && PLUGINS=$PLUGINS" "${plugin%/}
+    done
+fi
+
+if [ "$PLUGINS" != "" ]; then
+    if [ "$EXTERNALS_TRUNK" != "" ]; then
+        pluginExternalUpdate $(echo $EXTERNALS_TRUNK | tr " " "§") svn://trac.rezo.net/spip/spip $(echo "version de dev" | tr " " "§")
+    fi
+
+    if [ "$EXTERNALS_BRANCHE_3_1" != "" ]; then
+        pluginExternalUpdate $(echo $EXTERNALS_BRANCHE_3_1 | tr " " "§") svn://trac.rezo.net/spip/branches/spip-3.1 $(echo "branche de maintenance 3.1" | tr " " "§")
+    fi
+
+    if [ "$EXTERNALS_BRANCHE_3_0" != "" ]; then
+        pluginExternalUpdate $(echo $EXTERNALS_BRANCHE_3_0 | tr " " "§") svn://trac.rezo.net/spip/branches/spip-3.0 $(echo "branche de maintenance 3.0" | tr " " "§")
+    fi
+
+    if [ "$EXTERNALS_BRANCHE_2_1" != "" ]; then
+        pluginExternalUpdate $(echo $EXTERNALS_BRANCHE_2_1 | tr " " "§") svn://trac.rezo.net/spip/branches/spip-2.1/extensions $(echo "branche de maintenance 2.1" | tr " " "§")
+    fi
+fi
