@@ -3,16 +3,20 @@
 # Constantes&Globales
 
 SVN_VERSION=
-SVN_SPIP_ROOT=svn://trac.rezo.net/spip
-SVN_SPIP_TRUNK=/spip
-SVN_SPIP_BRANCHES=/branches
-SVN_SPIP_TAGS=/tags
-SVN_SPIP_REFERENCES=${HOME}"/.spip/svn_loader_references.txt"
-SVN_SPIP_REMOTE_REFERENCES=http://james.at.rezo.net/svn_spip/svn_spip.txt
 CURL_VESRION=
 PHP_VERSION=
 ZIP_VERSION=
 ARCHIVES_POSSIBLES=
+
+export SVN_SPIP_REFERENCES=${HOME}"/.spip/svn_loader_references.txt"
+if [ "$SVN_SPIP_REMOTE_REFERENCES" = "" ]; then
+    export SVN_SPIP_REMOTE_REFERENCES=http://james.at.rezo.net/svn_spip/svn_spip.txt
+fi
+
+export SVN_SPIP_ROOT=svn://trac.rezo.net/spip
+SVN_SPIP_TRUNK=/spip
+SVN_SPIP_BRANCHES=/branches
+SVN_SPIP_TAGS=/tags
 
 # Interactions
 
