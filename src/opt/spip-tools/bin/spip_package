@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source spip_communs
+source $(spip_tools --prefix)/share/spip_communs
 
 function doPackage
 {
