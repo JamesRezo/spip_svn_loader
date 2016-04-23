@@ -135,3 +135,59 @@ testBranchTest $dataBranchTest
 echo
 testTagTest $dataTagTest
 echo
+
+dataVersionPlusPetiteOuEgale=$(
+    printf "1.9\n2.0\n1\n"
+    printf "2.0\n1.9\n0\n"
+    printf "3.1.1\n3.2\n1\n"
+    #printf "1.0.0-beta6\n1.0.0\n1\n"
+)
+
+dataVersionPlusGrandeOuEgale=$(
+    printf "1.9.3\n1.9.0\n1\n"
+    printf "1.8.8\n1.9.0\n0\n"
+    printf "1.9.0\n1.9.0\n1\n"
+)
+
+function testVersionPlusPetiteOuEgale
+{
+    while [ $# -ne 0 ]; do
+        local version=$1
+        local comparaison=$2
+        local expected=$3
+        local _test=$(versionPlusPetiteOuEgale $version $comparaison)
+        local result=$([[ "$_test" = "$expected" ]] && echo '.' || echo 'F')
+        echo -n $result
+        if [ "$result" = "F" ]; then
+            echo -n "(tested:'"$version"/"$comparaison"', actual:'"$_test"', expected:'"$expected"')"
+        fi
+        shift
+        shift
+        shift
+    done
+    echo
+}
+
+function testVersionPlusGrandeOuEgale
+{
+    while [ $# -ne 0 ]; do
+        local version=$1
+        local comparaison=$2
+        local expected=$3
+        local _test=$(versionPlusGrandeOuEgale $version $comparaison)
+        local result=$([[ "$_test" = "$expected" ]] && echo '.' || echo 'F')
+        echo -n $result
+        if [ "$result" = "F" ]; then
+            echo -n "(tested:'"$version"/"$comparaison"', actual:'"$_test"', expected:'"$expected"')"
+        fi
+        shift
+        shift
+        shift
+    done
+    echo
+}
+
+testVersionPlusPetiteOuEgale $dataVersionPlusPetiteOuEgale
+echo
+testVersionPlusGrandeOuEgale $dataVersionPlusGrandeOuEgale
+echo

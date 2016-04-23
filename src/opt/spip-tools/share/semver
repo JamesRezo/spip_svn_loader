@@ -116,3 +116,36 @@ function proposeTag
     #TODO utiliser TRANSFORM_BRANCHES (Même si, 0.0.0->0.1.0, c'est plutôt signe qu'il n'y a pas besoin de faire une release)
     echo $proposition
 }
+
+# versionPlusGrandeOuEgale: compare deux versions sémantiques
+#
+# Usage versionPlusGrandeOuEgale maVersion versionDeComparaison
+#       if [ $? -eq 1]; then
+#           echo "maVersion est plus grande ou égale"
+#       else
+#           echo "maVersion est plus petite"
+#       fi
+#
+# @return 1 si maVersion est plus grande ou égale à versionDeComparison, 0 sinon
+function versionPlusGrandeOuEgale
+{
+    #TODO gestion des prereleases
+    printf "$1\n$2\n" | sort -t '.' -k 1,1 -k 2,2 -k 3,3 -n | tail -1 | grep "${1}" | wc -l | tr -d " "
+}
+
+# versionPlusPetiteOuEgale: compare deux versions sémantiques
+#
+# Usage versionPlusPetiteOuEgale maVersion versionDeComparaison
+#       if [ $? -eq 1]; then
+#           echo "maVersion est plus petite ou égale"
+#       else
+#           echo "maVersion est plus grande"
+#       fi
+#
+# @return 1 si maVersion est plus petite ou égale à versionDeComparaison, 0 sinon
+function versionPlusPetiteOuEgale
+{
+    #TODO gestion des prereleases
+    printf "$1\n$2\n" | sort -r -t '.' -k 1,1 -k 2,2 -k 3,3 -n | tail -1 | grep "${1}" | wc -l | tr -d " "
+}
+
