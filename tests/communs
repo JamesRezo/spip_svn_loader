@@ -1,0 +1,29 @@
+#!/bin/bash
+
+source $(spip_tools --prefix)/share/spip_communs
+
+dataEstDarwin=$(
+    printf "\ndarwin\n1\n"
+    printf "\ndarwin15\n1\n"
+    printf "\nLinux\n0\n"
+)
+
+function testEstDarwin
+{
+    while [ $# -ne 0 ]; do
+        local OSTYPE=$1
+        local expected=$2
+        local _test=$(estDarwin)
+        local result=$([[ "$_test" = "$expected" ]] && echo '.' || echo 'F')
+        echo -n $result
+        if [ "$result" = "F" ]; then
+            echo -n "(tested:'"$OSTYPE"', actual:'"$_test"', expected:'"$expected"')"
+        fi
+        shift
+        shift
+    done
+    echo
+}
+
+testEstDarwin $dataEstDarwin
+echo

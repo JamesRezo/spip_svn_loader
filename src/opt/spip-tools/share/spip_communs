@@ -84,25 +84,6 @@ function stabilite()
     echo $stabilite
 }
 
-# Semver
-
-# versionPlusGrandeOuEgale: compare deux versions sémantiques
-#
-# Usage versionPlusGrandeOuEgale maVersion versionDeComparaison
-#       if [ $? -eq 1]; then
-#           echo "maVersion est plus grande ou égale"
-#       else
-#           echo "maVersion est plus petite"
-#       fi
-#
-# @return 1 si maVersion est plus grande ou égale à versionDeComparison, 0 sinon
-function versionPlusGrandeOuEgale
-{
-    #TODO bug à corriger
-    #printf "${maVersion}\n${versionComparee}\n" | sort -t '.' -k 1,1 -k 2,2 -k 3,3 -n | tail -1 | grep "${maVersion}" | wc -l
-    test "${1}" != "$(printf "${1}\n${2}\n" | sort -t '.' -k 1,1 -k 2,2 -k 3,3 -n | tail -1 | grep "${1}")"
-}
-
 # Subversion
 
 # setSvnVersion: Vérifier que svn est installé et dans le PATH
@@ -224,20 +205,20 @@ function setZipVersion
 
 function estDarwin
 {
-    test $(echo "$OSTYPE" | tr [:upper:] [:lower:] | grep -e "^darwin$")
+    echo "$OSTYPE" | tr [:upper:] [:lower:] | grep -e "^darwin" | wc -l | tr -d ' '
 }
 
 # Usage date2timestamp "Tue, 22 Mar 2016 00:07:53"
 #       date2timestamp "2016-03-22 00:07:53"
 function date2timestamp
 {
-    if [ estDarwin ]; then
+    if [ $(estDarwin) -eq 1 ]; then
         echo $1 | grep "," > /dev/null
         if [ $? -eq 0 ]; then
-            local _date=`LANG=en_US.UTF8 && date -j -f "%a, %d %b %Y %T" "${1}" "+%s"`
+            local _date=`LANG=en_US.UTF8 && date -j -f "%a, %d %b %Y %T" "$(echo $1 | tr -s 'T' ' ')" "+%s"`
             echo $_date
         else
-            date -j -f "%Y-%m-%d %H:%M:%S" "${1}" "+%s"
+            date -j -f "%Y-%m-%d %H:%M:%S" "$(echo $1 | tr -s 'T' ' ')" "+%s"
         fi
     else
         LANG=en_US.UTF8 && date -d "${1}" "+%s"
@@ -247,7 +228,7 @@ function date2timestamp
 # Usage stat2timestamp <fichier>
 function stat2timestamp
 {
-    if [ estDarwin ]; then
+    if [ $(estDarwin) -eq 1 ]; then
         stat -f %m ${1}
     else
         stat -c %Y ${1}
