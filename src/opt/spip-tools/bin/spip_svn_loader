@@ -145,16 +145,18 @@ function setSvnVersion
 function svninfo
 {
     if [ `versionPlusGrandeOuEgale ${SVN_VERSION} 1.9.0` -eq 1 ]; then
-        svn info --show-item=$1
+        svn info --show-item=$1 $2
     else
         if [ "$1" = "repos-root-url" ]; then
-            svn info | grep -e "^Repository Root: " | cut -d" " -f3
+            svn info $2 | grep -e "^Repository Root: " | cut -d" " -f3
         elif [ "$1" = "relative-url" ]; then
-            svn info | grep -e "^Relative URL: " | cut -d" " -f3
+            svn info $2 | grep -e "^Relative URL: " | cut -d" " -f3
         elif [ "$1" = "last-changed-date" ]; then
-            svn info | grep -e "^Last Changed Date: " | cut -d" " -f4,5
+            svn info $2 | grep -e "^Last Changed Date: " | cut -d" " -f4,5
         elif [ "$1" = "wc-root" ]; then
-            svn info | grep -e "^Working Copy Root Path: " | cut -d" " -f5
+            svn info $2 | grep -e "^Working Copy Root Path: " | cut -d" " -f5
+        elif [ "$1" = "last-changed-revision" ]; then
+            svn info $2 | grep -e "^Last Changed Rev: " | cut -d" " -f4
         fi
     fi
 }
@@ -170,17 +172,46 @@ function reparation
         mkdir squelettes
     fi
 
-    echo "Sauvegarge des données (configuration, documents, plugins, ...)"
+    echo "Sauvegarde des données SPIP (configuration, documents, plugins, ...)"
     zip -q -r $fichier plugins config IMG -x config/ecran_securite.php config/remove.txt IMG/remove.txt && mv $fichier squelettes
     echo "Tentative de réparation ..."
-    svn cleanup --remove-unversioned --include-externals -q && svn revert -R -q . && svn up -q
-    #TODO svn: E205011: Failure occurred processing one or more externals definitions
+    if [ `versionPlusGrandeOuEgale ${SVN_VERSION} 1.9.0` -eq 1 ]; then
+        svn cleanup --remove-unversioned --include-externals -q && svn revert -R -q . && svn up -q 2>/dev/null
+        if [ $? -ne 0 ]; then
+            #svn: E205011: Failure occurred processing one or more externals definitions
+            rm -Rf plugins-dist
+            rm -Rf squelettes-dist
+            svn up --force -q
+        fi
+    else
+        #svn cleanup insuffisant avec une version de SVN ancienne...
+        svn cleanup && svn revert -R -q .
+        EFFACER=$(svn st --ignore-externals | grep -e '^?' | tr -d "?[:blank:]")
+        for rmfichier in $(printf "%s\n" $EFFACER); do
+            if [ ! -d $rmfichier ];then
+                rm $rmfichier
+            else
+                rm -Rf $rmfichier
+            fi
+        done
+        rm -Rf plugins-dist
+        rm -Rf squelettes-dist
+        svn up --force -q
+    fi
     echo "Restauration des données ..."
     mv squelettes/$fichier . && unzip -q $fichier && rm $fichier
     
     if [ $nexistepas -eq 1 ]; then
         rmdir squelettes
     fi
+}
+
+function doSvnRevision
+{
+    echo "Préparation du fichier svn.revision ..."
+    svn info $1 | grep -v "Working Copy Root Path" > svn.revision
+    local _REMOTE=`svninfo last-changed-date $1 | sed 's/\(.*\)\.[0-9]*Z/\1/' | tr -d 'T:-' | sed 's/\(.*\)\(..\)$/\1.\2/'`
+    touch -t $_REMOTE svn.revision
 }
 
 #Vérifier que svn est installé ou dans le PATH
@@ -191,6 +222,10 @@ then
     exit 1
 else
     setSvnVersion
+    if [ `versionPlusGrandeOuEgale ${SVN_VERSION} 1.9.0` -ne 1 ]
+    then
+        echo "Vous devriez penser à mettre à jour votre client SVN ..."
+    fi
 fi
 
 SVN_SPIP_ROOT=svn://trac.rezo.net/spip
@@ -317,6 +352,13 @@ then
     detacherREPONSE=non
 fi
 
+#Tester si le répertoire courant est un SPIP
+SPIP_VERSION_PHP=
+if [ -f ecrire/inc_version.php ]
+then
+    SPIP_VERSION_PHP=$(grep "spip_version_branche =" ecrire/inc_version.php | sed "s/.*\"\(.*\)\".*/\1/")
+fi
+
 #Tester si le répertoire courant est un SPIP sous SVN
 svninfo repos-root-url 2>/dev/null | grep -e "^${SVN_SPIP_ROOT}$" >/dev/null
 if [ $? -eq 1 ]
@@ -346,7 +388,7 @@ else
             SVN_SPIP_UPDATE=-1
         fi
     fi
-    echo "D'après le code, la version de SPIP est :"$(grep "spip_version_branche =" ecrire/inc_version.php | sed "s/.*\"\(.*\)\".*/\1/")
+    echo "D'après le code, la version de SPIP est :"$SPIP_VERSION_PHP
     echo "D'après SVN, la branche est :"$SVN_SPIP_BRANCHE_LOCALE
 fi
 
@@ -376,6 +418,7 @@ then
         fi
     fi
 
+    _DEFAULT=oui
     WC=`find . -maxdepth 1 -type d -name .svn -exec echo {} \;`
     if [ -z "$WC" ]; then
         #Warning si non vide
@@ -383,6 +426,11 @@ then
         if [ $VIDE -gt 0 ]
         then
             echo "ATTENTION! Ce répertoire n'est pas vide !"
+            if [ -n $SPIP_VERSION_PHP ]
+            then
+                echo "Et il semble qu'une instance de SPIP soit déjà présente ("$SPIP_VERSION_PHP")"
+                _DEFAULT=non
+            fi
         fi
         rep=.
         _chemin=`pwd`
@@ -398,7 +446,7 @@ then
 
     if [ -z $installerREPONSE ]
     then
-        ouinon "Installer SPIP dans $_chemin ?" "oui"
+        ouinon "Installer SPIP dans $_chemin ?" "$_DEFAULT"
         installerREPONSE=$ouinonREPONSE
     fi
     if [ "$installerREPONSE" = "oui" ]
@@ -423,7 +471,18 @@ then
         fi
         echo "Parfait ! Un peu de patience, maintenant..."
         svn $checkout --non-interactive -q ${SVN_SPIP_ROOT}${_BRANCHE} $rep
-        if [ $? -ne 0 ]
+        _ERREUR=$?
+        #SI svn checkout < 1.9.0 ET conflicts ALORS svn st + qqchose parce que $?=0
+        if [ `versionPlusGrandeOuEgale ${SVN_VERSION} 1.9.0` -ne 1 ]
+        then
+            checkout=$(echo $checkout | grep "export" | wc -l)
+            if [ $checkout -eq 0 ]
+            then
+                test `svn st | grep "Summary of conflicts" | wc -l` -eq 0
+                _ERREUR=$?
+            fi
+        fi
+        if [ $_ERREUR -ne 0 ]
         then
             echo "Il y a eu un problème d'installation."
             if [ $ARCHIVES_POSSIBLES -ge 3 ]
@@ -439,6 +498,10 @@ then
             else
                 exit 1
             fi
+        fi
+        if [ "$detacherREPONSE" = "oui" ]
+        then
+            doSvnRevision ${SVN_SPIP_ROOT}${_BRANCHE}
         fi
         echo "OK."
         exit 0
@@ -464,7 +527,6 @@ then
     fi
     if [ "$installerREPONSE" = "oui" ]
     then
-        #TODO exclure la branche avec laquelle le répertoire est déjà asoscié
         if [ -z $_BRANCHE ]
         then
             choixStabilite "release"
@@ -487,9 +549,26 @@ then
             fi
         fi
 
+        #Comparer $_BRANCHE et $SVN_SPIP_BRANCHE_LOCALE
+        if [ "^$_BRANCHE" = "$SVN_SPIP_BRANCHE_LOCALE" ]
+        then
+            echo "Basculer, c'est un peu bêbête, c'est la branche où vous vous trouvez ..."
+            ouinon "On fait la bascule quand même ?" "non"
+            if [ "$ouinonREPONSE" = "non" ]
+            then
+                exit 0
+            fi
+        fi
         echo "Bascule vers ^"$_BRANCHE"... (ça peut être long, patientez un peu)"
         svn switch --non-interactive -q ^${_BRANCHE}
-        if [ $? -ne 0 ]
+        _ERREUR=$?
+        #SI svn switch < 1.9.0 ET conflicts ALORS svn st + qqchose parce que $?=0
+        if [ `versionPlusGrandeOuEgale ${SVN_VERSION} 1.9.0` -ne 1 ]
+        then
+            test `svn st | grep "Summary of conflicts" | wc -l` -eq 0
+            _ERREUR=$?
+        fi
+        if [ $_ERREUR -ne 0 ]
         then
             echo "Il y a eu un problème de bascule."
             if [ $ARCHIVES_POSSIBLES -ge 3 ]
@@ -525,7 +604,14 @@ then
     then
         echo "Un peu de patience..."
         svn up --non-interactive -q
-        if [ $? -ne 0 ]
+        _ERREUR=$?
+        #SI svn update < 1.9.0 ET conflicts ALORS svn st + qqchose parce que $?=0
+        if [ `versionPlusGrandeOuEgale ${SVN_VERSION} 1.9.0` -ne 1 ]
+        then
+            test `svn st | grep "Summary of conflicts" | wc -l` -eq 0
+            _ERREUR=$?
+        fi
+        if [ $_ERREUR -ne 0 ]
         then
             echo "Il y a eu un problème de mise à jour."
             if [ $ARCHIVES_POSSIBLES -ge 3 ]
