@@ -82,6 +82,7 @@ function pluginCoreMove
             if [ "$_versions" != "" ]; then
                 local lastsemver=
                 echo
+                # Dans l'ordre 3.1, 3.0 puis 2.1
                 for core2semver in $_versions; do
                     local core=$(echo $core2semver | cut -d: -f1)
                     local semver=$(echo $core2semver | cut -d: -f2)
@@ -91,6 +92,10 @@ function pluginCoreMove
                         echo -n "svn mv ${CORE}branches/$core/plugins/$plugin ${ZONE}${plugin}branches/$semver"
                         echo " -m \"Déplacement du plugin '${nomPlugin}'. Branche ${semver}. Étape 3.\""
                         lastsemver=$semver
+                    else
+                        >&2 echo "ATTENTION ! Le plugin '${nomPlugin}' a déjà une branche prévue pour SPIP 3.1 pour la version '${semver}'."
+                        svn diff ${CORE}branches/spip-3.0/plugins/${nomPlugin} ${CORE}branches/spip-3.1/plugins/${nomPlugin} > ${nomPlugin}.patch
+                        >&2 echo "Cf. le fichier '${nomPlugin}.patch' pour voir les différences entre ces deux branches."
                     fi
                 done
             fi
