@@ -86,8 +86,8 @@ function pluginCoreMove
                 for core2semver in $_versions; do
                     local core=$(echo $core2semver | cut -d: -f1)
                     local semver=$(echo $core2semver | cut -d: -f2)
-                    #TODO Et donc, contrôler quand on a plusieurs fois la même branche proposée (dans 3.0 et 3.1)
-                    #     Et si si oui, privilégier la branche spip-3.1 pour le `svn mv`
+                    # Et donc, contrôler quand on a plusieurs fois la même branche proposée (dans 3.0 et 3.1)
+                    # Et si si oui, privilégier la branche spip-3.1 pour le `svn mv`
                     if [ "$lastsemver" != "$semver" ]; then
                         echo -n "svn mv ${CORE}branches/$core/plugins/$plugin ${ZONE}${plugin}branches/$semver"
                         echo " -m \"Déplacement du plugin '${nomPlugin}'. Branche ${semver}. Étape 3.\""
