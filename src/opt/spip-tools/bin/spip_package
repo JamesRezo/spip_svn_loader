@@ -1,6 +1,29 @@
 #!/bin/bash
 
 source $(spip_tools --prefix)/share/spip_communs
+source $(spip_tools --prefix)/share/semver
+
+function LastChangedRev2Revision
+{
+    local xy=$(proposeBranche $1)
+    local match=0
+
+    if [ $(versionPlusPetiteOuEgale $xy 2.0) -eq 1 ]; then
+        match=1
+    elif [ "$xy" = "2.1" -a $(versionPlusPetiteOuEgale $1 2.1.29) -eq 1 ]; then
+        match=1
+    elif [ "$xy" = "3.0" -a $(versionPlusPetiteOuEgale $1 3.0.22) -eq 1 ]; then
+        match=1
+    elif [ "$xy" = "3.1" -a $(versionPlusPetiteOuEgale $1 3.1.1) -eq 1 ]; then
+        match=1
+    fi
+
+    if [ $match -eq 1 ]; then
+        sed '/^Revision:/d' svn.revision | sed 's/^Last Changed Rev: \(.*\)/Revision: \1/' > svn.revision.bis
+        touch -r svn.revision svn.revision.bis
+        mv svn.revision.bis svn.revision
+    fi
+}
 
 function doPackage
 {
@@ -41,7 +64,9 @@ function doPackage
         cleanSpipDir andGo
         echo && echo "Téléchargement '"$version"' ..."
         spip_svn_loader $install
-        #TODO fabrique du fichier svn.revision: pour dev -> spip-dev alias à trouver quelque part
+        if [ "$releaseMode" = "release" -o "$releaseMode" = "test" ]; then
+            LastChangedRev2Revision $version
+        fi
         echo && echo "Archivage '"$version"' ..."
         cd .. && zip -q -r -ll -o spip-${version}.zip spip/* && cleanSpipDir
         mv spip-${version}.zip archives/
@@ -156,7 +181,7 @@ do
     for link in $(ls -1 public/$rep)
     do
         package=$(readlink public/$rep/$link | sed "s/.*archives\/\(.*\)/archives\/\1/")
-        if [ estDarwin ]
+        if [ $(estDarwin) -eq 1 ]
         then 
             shasum -a 512 $package >> public/.sha512sum.txt
         else
