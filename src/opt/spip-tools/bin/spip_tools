@@ -1,12 +1,17 @@
 #!/bin/bash
 
-if [ "$1" = "--prefix" ]; then
+function prefix
+{
     dirname $0 | sed 's/\(.*\)\/bin$/\1/'
+}
+
+if [ "$1" = "--prefix" ]; then
+    prefix
 fi
 
 if [ "$1" = "--env" ]; then
-    source ~/Sites/spip-dev/packaging/spip-tools/src/opt/spip-tools/share/spip_communs
-    source ~/Sites/spip-dev/spip-zone/semver
+    source $(prefix)/share/spip_communs
+    source $(prefix)/share/semver
     #TODO -f /etc/spip-tools.conf
     #TODO -d /etc/spip-tools.d/*.conf
     #TODO -f ~/.spip/spip-tools.conf
