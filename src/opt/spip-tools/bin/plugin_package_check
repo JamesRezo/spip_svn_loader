@@ -7,6 +7,19 @@ NE_PAS_TRAITER="_squelettes_\n_ze_laboratoire_"
 VALID_BRANCH="^v?"$VALID_IDENTIFIER"(\."$VALID_IDENTIFIER"(\."$VALID_IDENTIFIER")?)?$"
 _DO_BASH_CMD=
 
+function plusGrandeBranche
+{
+    local branches=$(svn ls ${1%/}/branches)
+    local plusGrande=0
+    for branche in $branches; do
+        brancheCalculee=$(proposeBranche $branche)
+        if [ $(versionPlusGrandeOuEgale $brancheCalculee $(proposeBranche $plusGrande)) -eq 1 ]; then
+            plusGrande=$branche
+        fi
+    done
+    echo ${1%/}/branches/$plusGrande
+}
+
 function svn2http
 {
     local url=$1
@@ -76,10 +89,7 @@ BASHCMD
             _DO_BASH_CMD=$(cat <<BASHCMD
 $_DO_BASH_CMD
 
-#TODO : partir de la branche la plus grande ou du tag le plus grand
-#svn cp <plusGrandeBranche ${ZONE}${plugin}> ${ZONE}${plugin}trunk -m "Création trunk de '${nomPlugin}'."
-#svn cp <plusGrandTag ${ZONE}${plugin}> ${ZONE}${plugin}trunk -m "Création trunk de '${nomPlugin}'."
-#Exemple: svn cp ${ZONE}monplugin/branches/4.5 ${ZONE}monplugin/trunk -m "Création trunk de 'monplugin'."
+svn cp $(plusGrandeBranche ${ZONE}${plugin}) ${ZONE}${plugin}trunk -m "Création trunk de '${nomPlugin}'."
 BASHCMD
 )
         fi
