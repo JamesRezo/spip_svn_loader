@@ -164,7 +164,6 @@ BASHCMD
             then
                 echo " * Quand il y en aura !"
             fi
-
         fi
     fi
 }
@@ -193,7 +192,7 @@ then
 else
     for plugin in `svn ls $ZONE`
     do
-        if [ $(printf $NE_PAS_TRAITER | egrep "^${1%/}$" | wc -l) -eq 0 ]
+        if [ $(printf $NE_PAS_TRAITER | egrep "^${plugin%/}$" | wc -l) -eq 0 ]
         then
             checkPlugin $plugin
         fi
