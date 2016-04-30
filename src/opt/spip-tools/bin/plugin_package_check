@@ -34,11 +34,11 @@ function checkPlugin
         echo "$plugin n'existe pas !"
         exit 1
     fi
-    if [ $(echo $ARBO | egrep -v "(trunk|branches|tags)" | wc -l) -ne 0 ]
+    if [ $(echo $ARBO | egrep -v "(trunk|branches|tags)/" | wc -l) -ne 0 ]
     then
         hasFiles=1            
     fi
-    if [ $(echo $ARBO | egrep "(trunk|branches|tags)" | wc -l) -ne 0 ]
+    if [ $(echo $ARBO | egrep "(trunk|branches|tags)/" | wc -l) -ne 0 ]
     then
         hasStdLayout=1
         hasTrunk=$([[ `svn ls ${ZONE}${plugin}trunk 2>/dev/null | wc -l` -gt 0 ]] && echo 1 || echo 0)
