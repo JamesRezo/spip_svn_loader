@@ -209,7 +209,9 @@ function reparation
 function doSvnRevision
 {
     echo "Préparation du fichier svn.revision ..."
-    svn info $1 | grep -v "Working Copy Root Path" > svn.revision
+    OLDLANG=$LANG
+    LANG=en_US.UTF-8 && svn info $1 | grep -v "Working Copy Root Path" > svn.revision
+    LANG=$OLDLANG
     local _REMOTE=`svninfo last-changed-date $1 | sed 's/\(.*\)\.[0-9]*Z/\1/' | tr -d 'T:-' | sed 's/\(.*\)\(..\)$/\1.\2/'`
     touch -t $_REMOTE svn.revision
 }
@@ -478,7 +480,7 @@ then
             checkout=$(echo $checkout | grep "export" | wc -l)
             if [ $checkout -eq 0 ]
             then
-                test `svn st | grep "Summary of conflicts" | wc -l` -eq 0
+                test `LANG=en_US.UTF-8 && svn st | grep "Summary of conflicts" | wc -l` -eq 0
                 _ERREUR=$?
             fi
         fi
@@ -565,7 +567,7 @@ then
         #SI svn switch < 1.9.0 ET conflicts ALORS svn st + qqchose parce que $?=0
         if [ `versionPlusGrandeOuEgale ${SVN_VERSION} 1.9.0` -ne 1 ]
         then
-            test `svn st | grep "Summary of conflicts" | wc -l` -eq 0
+            test `LANG=en_US.UTF-8 && svn st | grep "Summary of conflicts" | wc -l` -eq 0
             _ERREUR=$?
         fi
         if [ $_ERREUR -ne 0 ]
@@ -608,7 +610,7 @@ then
         #SI svn update < 1.9.0 ET conflicts ALORS svn st + qqchose parce que $?=0
         if [ `versionPlusGrandeOuEgale ${SVN_VERSION} 1.9.0` -ne 1 ]
         then
-            test `svn st | grep "Summary of conflicts" | wc -l` -eq 0
+            test `LANG=en_US.UTF-8 && svn st | grep "Summary of conflicts" | wc -l` -eq 0
             _ERREUR=$?
         fi
         if [ $_ERREUR -ne 0 ]
