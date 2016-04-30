@@ -149,3 +149,28 @@ function versionPlusPetiteOuEgale
     printf "$1\n$2\n" | sort -r -t '.' -k 1,1 -k 2,2 -k 3,3 -n | tail -1 | grep "${1}" | wc -l | tr -d " "
 }
 
+function plusGrandeBranche
+{
+    local branches=$(svn ls ${1%/}/branches)
+    local plusGrande=0
+    for branche in $branches; do
+        brancheCalculee=$(proposeBranche $branche)
+        if [ $(versionPlusGrandeOuEgale $brancheCalculee $(proposeBranche $plusGrande)) -eq 1 ]; then
+            plusGrande=$branche
+        fi
+    done
+    echo ${1%/}/branches/$plusGrande
+}
+
+function plusGrandTag
+{
+    local tags=$(svn ls ${1%/}/tags)
+    local plusGrand=0
+    for tag in $tags; do
+        tagCalcule=$(proposeTag $tag)
+        if [ $(versionPlusGrandeOuEgale $tagCalcule $(proposeTag $plusGrand)) -eq 1 ]; then
+            plusGrand=$tag
+        fi
+    done
+    echo ${1%/}/tags/$plusGrand
+}

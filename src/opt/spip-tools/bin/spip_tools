@@ -20,7 +20,9 @@ if [ "$1" = "--env" ]; then
 fi
 
 if [ "$1" = "--conf" ]; then
-    cat /etc/spip-tools.conf
+    if [ -f /etc/spip-tools.conf ]; then
+        cat /etc/spip-tools.conf
+    fi
 fi
 
 if [ "$1" = "--help" ]; then

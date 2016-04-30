@@ -3,22 +3,16 @@
 source $(spip_tools --prefix)/share/semver
 
 ZONE=svn://zone.spip.org/spip-zone/_plugins_/
+#Ne pas traiter
 NE_PAS_TRAITER="_squelettes_\n_ze_laboratoire_"
+#Commun avec /_core_
+NE_PAS_TRAITER=$NE_PAS_TRAITER"\nforum\njquery_ui\nmsie_compat\nplan\ntextwheel"
+#Conteneurs de plugins
+NE_PAS_TRAITER=$NE_PAS_TRAITER"\nPeuplement_LDAP\nabonnement-z\nemballe_medias\ndiogene\neva_freemind\nlilyspip\nplugins_seenthis\ninscription"
+#Pas des plugins
+NE_PAS_TRAITER=$NE_PAS_TRAITER"\ncairn\ncarte_postale\ndav\ngedcom\nindymedia_svn\nlangdoc\nselecteur-rubriqspip-zone\nshortlink\ntest-merge\nvariables"
 VALID_BRANCH="^v?"$VALID_IDENTIFIER"(\."$VALID_IDENTIFIER"(\."$VALID_IDENTIFIER")?)?$"
 _DO_BASH_CMD=
-
-function plusGrandeBranche
-{
-    local branches=$(svn ls ${1%/}/branches)
-    local plusGrande=0
-    for branche in $branches; do
-        brancheCalculee=$(proposeBranche $branche)
-        if [ $(versionPlusGrandeOuEgale $brancheCalculee $(proposeBranche $plusGrande)) -eq 1 ]; then
-            plusGrande=$branche
-        fi
-    done
-    echo ${1%/}/branches/$plusGrande
-}
 
 function svn2http
 {

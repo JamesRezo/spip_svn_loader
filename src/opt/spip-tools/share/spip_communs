@@ -210,6 +210,7 @@ function estDarwin
 
 # Usage date2timestamp "Tue, 22 Mar 2016 00:07:53"
 #       date2timestamp "2016-03-22 00:07:53"
+#       date2timestamp "2016-03-22T00:07:53.855693Z"
 function date2timestamp
 {
     if [ $(estDarwin) -eq 1 ]; then
@@ -218,7 +219,7 @@ function date2timestamp
             local _date=`LANG=en_US.UTF8 && date -j -f "%a, %d %b %Y %T" "$(echo $1 | tr -s 'T' ' ')" "+%s"`
             echo $_date
         else
-            date -j -f "%Y-%m-%d %H:%M:%S" "$(echo $1 | tr -s 'T' ' ')" "+%s"
+            date -j -f "%Y-%m-%d %H:%M:%S" "$(echo $1 | tr -s 'T' ' ' | cut -d. -f1)" "+%s"
         fi
     else
         LANG=en_US.UTF8 && date -d "${1}" "+%s"

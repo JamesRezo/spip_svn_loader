@@ -1,0 +1,109 @@
+#!/bin/bash
+
+source $(spip_tools --prefix)/share/spip_communs
+source $(spip_tools --prefix)/share/semver
+
+ZONE=svn://zone.spip.org/spip-zone/_plugins_/
+NE_PAS_TRAITER="_squelettes_\n_ze_laboratoire_"
+NE_PAS_TRAITER=$NE_PAS_TRAITER"\nforum\njquery_ui\nmsie_compat\nplan\ntextwheel"
+NE_PAS_TRAITER=$NE_PAS_TRAITER"\nPeuplement_LDAP\nabonnement-z\nemballe_medias\ndiogene\neva_freemind\nlilyspip\nplugins_seenthis\ninscription"
+NE_PAS_TRAITER=$NE_PAS_TRAITER"\ncairn\ncarte_postale\ndav\ngedcom\nindymedia_svn\nlangdoc\nselecteur-rubriqspip-zone\nshortlink\ntest-merge\nvariables"
+
+function svn2http
+{
+    echo $1 | sed 's/^svn:\/\/zone\.spip\.org\/spip-zone/http:\/\/zone.spip.org\/trac\/spip-zone\/browser/'
+}
+
+function svn2cache
+{
+    echo ${HOME}$( echo $1 | sed 's/^svn:\/\/zone\.spip\.org\/spip-zone/\/.spip\/cache\/zone/')
+}
+
+function cache
+{
+    local fichier=$1
+    local dateFichier=$(svninfo last-changed-date $fichier)
+    local timestamp=$(date2timestamp $dateFichier)
+
+    cacheFichier=$(svn2cache $fichier)
+
+    if [ ! -f $cacheFichier ]; then
+        mkdir -p $(dirname $cacheFichier)
+        svn cat $fichier | dos2unix | tr [:upper:] [:lower:] | recode UTF-8 | recode -d html..xml > $cacheFichier
+    else
+        _LOCALE=$(stat2timestamp ${cacheFichier})
+        if [ "$timestamp" -gt "$_LOCALE" ]
+        then
+            svn cat $fichier | dos2unix | tr [:upper:] [:lower:] | recode UTF-8 | recode -d html..xml > $cacheFichier
+        fi
+    fi
+
+    echo $cacheFichier 
+}
+
+function statPlugin
+{
+    local plugin=${1%/}"/"
+    ARBO=`svn ls ${ZONE}${plugin}`
+    if [ $? -eq 1 ]
+    then
+        >&2 echo "$plugin n'existe pas !"
+        exit 1
+    fi
+    nomPlugin=${plugin%/}
+    datePlugin=$(svninfo last-changed-date ${ZONE}${plugin} | cut -dT -f1)
+    anneePlugin=$(echo $datePlugin | cut -d'-' -f1)
+    if [ $anneePlugin -ge 2015 ]; then
+        echo
+        echo "## Plugin [$nomPlugin]("$(svn2http ${ZONE}${plugin})")"
+        echo "### Dernière mise à jour : "$datePlugin
+        echo
+        # echo "### Versions trouvées dans les fichiers \`plugin.xml\` ou \`paquet.xml\` pour les branches et releases :"
+        # XMLS=$(svn ls --depth infinity ${ZONE}${plugin} | grep -v trunk | egrep "(plugin|paquet)\.xml" | egrep -v "^p")
+        echo "### Versions trouvées dans les fichiers \`plugin.xml\` ou \`paquet.xml\` pour le trunk, les branches et releases :"
+        XMLS=$(svn ls --depth infinity ${ZONE}${plugin} | egrep "(plugin|paquet)\.xml")
+        if [ "$XMLS" = "" ]; then
+            echo " * Aucun."
+        else
+            echo " * Nombre de fichiers xml : "$(printf "\n%s" $XMLS | wc -l | tr -d ' ')
+            for xml in $XMLS; do
+                >&2 echo ${ZONE}${plugin}$xml
+                echo -n " * "$(echo $xml | sed 's/\/plugin.xml//' | sed 's/\/paquet.xml//')" : "
+                xml=$(cache ${ZONE}${plugin}$xml)
+                if [ $(echo $xml | grep -e "plugin\.xml$" | wc -l | tr -d ' ') -eq 1 ]; then
+                    echo -n $(cat $xml | xmlstarlet sel -t -v /plugin/version 2>/dev/null)
+                    echo -n " Compatibilité SPIP : "
+                    echo -n $(cat $xml | xmlstarlet sel -t -v /plugin/necessite[@id=\"spip\"]/@version 2>/dev/null)
+                else
+                    echo -n $(cat $xml | xmlstarlet sel -t -v /paquet/@version 2>/dev/null)
+                    echo -n " Compatibilité SPIP : "
+                    echo -n $(cat $xml | xmlstarlet sel -t -v /paquet/@compatibilite 2>/dev/null)
+                fi
+                echo
+            done
+        fi
+    fi
+}
+
+echo "# Quelques statistiques"
+
+if [ "$1" != "" ]
+then
+    while [[ "$1" != "" ]]; do
+        if [ $(printf $NE_PAS_TRAITER | egrep "^${1%/}$" | wc -l) -eq 0 ]
+        then
+            statPlugin $1
+        else
+            >&2 echo "Non. pas le répertoire '$1'."
+        fi
+        shift
+    done
+else
+    for plugin in `svn ls $ZONE`
+    do
+        if [ $(printf $NE_PAS_TRAITER | egrep "^${plugin%/}$" | wc -l) -eq 0 ]
+        then
+            statPlugin $plugin
+        fi
+    done
+fi
