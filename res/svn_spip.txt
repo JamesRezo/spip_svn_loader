@@ -2,6 +2,6 @@
 ^/branches/spip-2.1
 ^/branches/spip-3.0
 ^/branches/spip-3.1
-^/tags/spip-2.1.29
-^/tags/spip-3.0.24
-^/tags/spip-3.1.3
+^/tags/spip-2.1.30
+^/tags/spip-3.0.25
+^/tags/spip-3.1.4
